@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Repeat, Trash2, Bell, ExternalLink, Mic, Plus, Check, Calendar } from 'lucide-react';
+import { X, Repeat, Trash2, Bell, ExternalLink, Plus, Check, Calendar } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, PROJECTS, getProjectColor, TaskStatus, SubTask, Priority } from '../store/useTaskStore';
 import { format } from 'date-fns';
@@ -21,6 +21,7 @@ export function TaskModal() {
   const [priority, setPriority] = useState<Priority | null>(null);
   const [taskTime, setTaskTime] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
+  const [localSubtasks, setLocalSubtasks] = useState<SubTask[]>([]);
 
   useEffect(() => {
     if (!isTaskModalOpen) return;
@@ -30,24 +31,24 @@ export function TaskModal() {
       setRecurring(editingTask.recurring||false); setReminder(editingTask.reminderEnabled||false);
       setReminderTime(editingTask.reminderTime||'09:00'); setGcal(editingTask.googleCalendarSync||false);
       setSomeday(editingTask.someday||false); setPriority(editingTask.priority||null);
-      setTaskTime(editingTask.time||'');
+      setTaskTime(editingTask.time||''); setLocalSubtasks([]);
     } else {
       setTitle(''); setProject(PROJECTS[0].name); setStatus('todo');
       setDate(format(selectedDate||new Date(2026,4,15),'yyyy-MM-dd'));
       setNotes(''); setRecurring(false); setReminder(false); setReminderTime('09:00'); setGcal(false); setSomeday(false);
-      setPriority(null); setTaskTime('');
+      setPriority(null); setTaskTime(''); setLocalSubtasks([]);
     }
     setNewSubtask('');
   }, [isTaskModalOpen, editingTask, selectedDate]);
 
   // ESC closes modal with unsaved-changes guard (all fields)
-  const stateRef = useRef({ title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask, isTaskModalOpen });
-  stateRef.current = { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask, isTaskModalOpen };
+  const stateRef = useRef({ title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen });
+  stateRef.current = { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !stateRef.current.isTaskModalOpen) return;
-      const { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask } = stateRef.current;
+      const { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask } = stateRef.current;
       const hasChanges = editingTask
         ? title !== editingTask.title
           || notes !== (editingTask.notes || '')
@@ -68,7 +69,8 @@ export function TaskModal() {
           || recurring
           || reminder
           || priority !== null
-          || taskTime !== '';
+          || taskTime !== ''
+          || localSubtasks.length > 0;
       if (hasChanges) {
         if (window.confirm('Є незбережені зміни. Закрити без збереження?')) {
           setTaskModalOpen(false); setEditingTask(null);
@@ -96,7 +98,7 @@ export function TaskModal() {
       priority: priority || undefined, time: taskTime || undefined,
     };
     if (editingTask) updateTask(editingTask.id, data);
-    else addTask(data);
+    else addTask({ ...data, subtasks: localSubtasks.length > 0 ? localSubtasks : undefined });
     close();
   };
 
@@ -107,12 +109,21 @@ export function TaskModal() {
   };
 
   const handleAddSubtask = () => {
-    if (!newSubtask.trim() || !editingTask) return;
-    addSubtask(editingTask.id, newSubtask.trim());
+    if (!newSubtask.trim()) return;
+    if (editingTask) {
+      addSubtask(editingTask.id, newSubtask.trim());
+    } else {
+      setLocalSubtasks(prev => [...prev, { id: `local_${Date.now()}`, title: newSubtask.trim(), done: false }]);
+    }
     setNewSubtask('');
   };
 
-  const subtasks = editingTask?.subtasks || [];
+  const toggleLocalSubtask = (id: string) =>
+    setLocalSubtasks(prev => prev.map(st => st.id === id ? { ...st, done: !st.done } : st));
+  const deleteLocalSubtask = (id: string) =>
+    setLocalSubtasks(prev => prev.filter(st => st.id !== id));
+
+  const subtasks = editingTask ? (editingTask.subtasks || []) : localSubtasks;
   const subtasksDone = subtasks.filter(s => s.done).length;
 
   const statuses: {v:TaskStatus;l:string;c:string}[] = [
@@ -132,7 +143,6 @@ export function TaskModal() {
           <div className="flex items-center gap-1">
             <button onClick={handleGcal} title="Google Calendar" className={`p-1.5 rounded-lg transition-colors ${gcal?'bg-blue-100 text-blue-600':'text-slate-400 hover:bg-slate-100 hover:text-blue-600'}`}><ExternalLink className="w-4 h-4"/></button>
             <button onClick={()=>setReminder(!reminder)} title="Нагадування" className={`p-1.5 rounded-lg transition-colors ${reminder?'bg-amber-100 text-amber-600':'text-slate-400 hover:bg-slate-100 hover:text-amber-600'}`}><Bell className="w-4 h-4"/></button>
-            <button title="Голос" className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-indigo-600 transition-colors"><Mic className="w-4 h-4"/></button>
             <button onClick={close} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400"><X className="w-4 h-4"/></button>
           </div>
         </div>
@@ -218,46 +228,44 @@ export function TaskModal() {
             </div>
           </div>
 
-          {/* Subtasks — only when editing existing task */}
-          {editingTask && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  Підзадачі {subtasks.length>0&&`(${subtasksDone}/${subtasks.length})`}
-                </label>
-                {subtasks.length>0 && (
-                  <div className="h-1 bg-slate-100 rounded-full overflow-hidden w-16">
-                    <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width:`${Math.round((subtasksDone/subtasks.length)*100)}%`}}/>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-1.5 mb-2">
-                {subtasks.map(st=>(
-                  <div key={st.id} className="flex items-center gap-2 group">
-                    <button onClick={()=>toggleSubtask(editingTask.id,st.id)}
-                      className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${st.done?'bg-emerald-500 border-emerald-500':'border-slate-300 hover:border-indigo-400'}`}>
-                      {st.done&&<Check className="w-2.5 h-2.5 text-white"/>}
-                    </button>
-                    <span className={`flex-1 text-sm ${st.done?'line-through text-slate-400':'text-slate-700 dark:text-slate-200'}`}>{st.title}</span>
-                    {st.date&&<span className="text-[9px] text-slate-400">{format(new Date(st.date),'d MMM')}</span>}
-                    <button onClick={()=>deleteSubtask(editingTask.id,st.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all">
-                      <X className="w-3 h-3"/>
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input value={newSubtask} onChange={e=>setNewSubtask(e.target.value)}
-                  onKeyDown={e=>{ if(e.key==='Enter') handleAddSubtask(); }}
-                  placeholder="+ Додати підзадачу..."
-                  className="flex-1 text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
-                <button onClick={handleAddSubtask} className="bg-indigo-600 text-white px-3 rounded-lg hover:bg-indigo-700 transition-colors">
-                  <Plus className="w-4 h-4"/>
-                </button>
-              </div>
+          {/* Subtasks */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                Підзадачі {subtasks.length>0&&`(${subtasksDone}/${subtasks.length})`}
+              </label>
+              {subtasks.length>0 && (
+                <div className="h-1 bg-slate-100 rounded-full overflow-hidden w-16">
+                  <div className="h-full bg-emerald-500 rounded-full transition-all" style={{width:`${Math.round((subtasksDone/subtasks.length)*100)}%`}}/>
+                </div>
+              )}
             </div>
-          )}
+            <div className="space-y-1.5 mb-2">
+              {subtasks.map(st=>(
+                <div key={st.id} className="flex items-center gap-2 group">
+                  <button onClick={()=>editingTask?toggleSubtask(editingTask.id,st.id):toggleLocalSubtask(st.id)}
+                    className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${st.done?'bg-emerald-500 border-emerald-500':'border-slate-300 hover:border-indigo-400'}`}>
+                    {st.done&&<Check className="w-2.5 h-2.5 text-white"/>}
+                  </button>
+                  <span className={`flex-1 text-sm ${st.done?'line-through text-slate-400':'text-slate-700 dark:text-slate-200'}`}>{st.title}</span>
+                  {st.date&&<span className="text-[9px] text-slate-400">{format(new Date(st.date),'d MMM')}</span>}
+                  <button onClick={()=>editingTask?deleteSubtask(editingTask.id,st.id):deleteLocalSubtask(st.id)}
+                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all">
+                    <X className="w-3 h-3"/>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input value={newSubtask} onChange={e=>setNewSubtask(e.target.value)}
+                onKeyDown={e=>{ if(e.key==='Enter') handleAddSubtask(); }}
+                placeholder="+ Додати підзадачу..."
+                className="flex-1 text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+              <button onClick={handleAddSubtask} className="bg-indigo-600 text-white px-3 rounded-lg hover:bg-indigo-700 transition-colors">
+                <Plus className="w-4 h-4"/>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
