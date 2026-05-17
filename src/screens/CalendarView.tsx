@@ -138,8 +138,7 @@ function WeekTaskCard({ task }: { task:Task }) {
 
   return (
     <>
-      <div draggable
-        onDragStart={e=>e.dataTransfer.setData('taskId',task.id)}
+      <div
         onDoubleClick={openModal}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

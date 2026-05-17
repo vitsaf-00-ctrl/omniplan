@@ -65,7 +65,7 @@ export function MobileTabBar() {
           const active = activeView === tab.view;
           return (
             <button key={tab.view} onClick={() => { setActiveView(tab.view); setMoreOpen(false); }}
-              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors">
+              className="flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors relative">
               <Icon className={`w-5 h-5 ${active ? 'text-indigo-600' : 'text-slate-400'}`}/>
               <span className={`text-[9px] font-bold ${active ? 'text-indigo-600' : 'text-slate-400'}`}>{tab.label}</span>
               {active && <div className="absolute bottom-0 w-8 h-0.5 bg-indigo-600 rounded-t-full"/>}

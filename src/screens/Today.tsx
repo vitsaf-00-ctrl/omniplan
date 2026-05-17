@@ -91,6 +91,9 @@ export function Today() {
             : <Circle className="w-5 h-5 text-slate-300 hover:text-indigo-400 transition-colors"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor] || 'bg-slate-400'}`}/>
+        {task.priority && (
+          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'}`}/>
+        )}
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-semibold truncate ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-200' : 'text-slate-800 dark:text-white'}`}>
             {task.title}
