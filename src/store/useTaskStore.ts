@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { fsSetTask, fsDeleteTask } from '../lib/taskFirestore';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TagColor = 'blue' | 'indigo' | 'purple' | 'emerald' | 'amber' | 'rose' | 'slate';
@@ -17,7 +18,7 @@ export interface Task {
   project: string;
   status: TaskStatus;
   date: Date;
-  someday?: boolean; // no specific date
+  someday?: boolean;
   tagColor: TagColor;
   notes?: string;
   recurring?: boolean;
@@ -27,7 +28,7 @@ export interface Task {
   subtasks?: SubTask[];
   createdAt: Date;
   priority?: Priority;
-  time?: string; // "HH:MM" scheduled time
+  time?: string;
 }
 
 export interface Project { id: string; name: string; color: TagColor; }
@@ -52,64 +53,29 @@ export const PROJECTS: Project[] = [
 ];
 export function getProjectColor(p: string): TagColor { return PC[p] || 'slate'; }
 
-const T = (id:string,title:string,project:string,status:TaskStatus,day:number,tagColor:TagColor,recurring?:boolean): Task => ({
-  id,title,project,status,date:new Date(2026,4,day),tagColor,recurring,createdAt:new Date()
-});
-
-const INITIAL_TASKS: Task[] = [
-  T('m1','Прибрати ціни','ДІС','done',11,'blue'),
-  T('m2','Прибрати ціни','Трейд','done',11,'purple'),
-  T('m3','SMM stories','ДІС','done',11,'blue',true),
-  T('m4','SMM post','ДІС','done',11,'blue',true),
-  T('m5','Міроненко закупки: підготовити','AI officer','done',11,'indigo'),
-  T('m6','Залишки Аутлет: додавати','ДІС','done',11,'blue'),
-  T('t1','SMM stories','ДІС','done',12,'blue',true),
-  T('t2','Товари дня','ДІС','done',12,'blue',true),
-  T('t3','Міроненко закупки: підготовити','AI officer','done',12,'indigo'),
-  T('t4','ЛавЮ додати товари: тестити','ДІС','done',12,'blue'),
-  T('t5','Поповнити рахунок','Орлі','done',12,'amber'),
-  T('t6','Навчання RD','Навчання','done',12,'emerald',true),
-  T('w1','SMM stories','ДІС','done',13,'blue',true),
-  T('w2','SMM post','ДІС','done',13,'blue',true),
-  T('w3','Товари дня','ДІС','done',13,'blue',true),
-  T('w4','Коментарі на сайт','ДІС','done',13,'blue'),
-  T('w5','Відео створити','Моє','done',13,'emerald'),
-  T('th1','SMM stories','ДІС','done',14,'blue',true),
-  T('th2','Коментарі на сайт','ДІС','done',14,'blue'),
-  T('th3','Товари дня','ДІС','done',14,'blue',true),
-  T('th4','ЛавЮ додати товари','ДІС','done',14,'blue'),
-  T('th5','Обновить n8n','Розробка','todo',14,'indigo'),
-  T('th6','Антигравіті вчити','Навчання','todo',14,'emerald'),
-  T('th7','Створити дашборд Digital','ДІС','todo',14,'blue'),
-  T('th8','Відібрати наступні пілоти','AI officer','in_progress',14,'indigo'),
-  T('th9','Тестити Claude','AI officer','in_progress',14,'indigo'),
-  T('th10','Навчання RD','Навчання','todo',14,'emerald',true),
-  T('f1','Розробка ТЗ нагадувань','Хайфом','todo',15,'blue'),
-  T('f2','SMM post','ДІС','todo',15,'blue',true),
-  T('f3','SMM stories','ДІС','todo',15,'blue',true),
-  T('m18_1','Змінити ціни','ДІС','todo',18,'blue'),
-  T('m18_2','SMM post','ДІС','todo',18,'blue',true),
-  T('m18_3','Vocabulary поповнити','AI officer','todo',18,'indigo'),
-  T('m18_4','SMM stories: планування','ДІС','todo',18,'blue'),
-  T('m18_5','Аналіз продажів за вихідні','Трейд','todo',18,'purple'),
-  T('20_1','Оптимізація Firestore','ACAT','in_progress',20,'emerald'),
-  T('21_1','Почистити гугл аналітікс','Трейд','todo',21,'purple'),
-  T('22_1','Демо для клієнта','Трейд','todo',22,'purple'),
-  T('25_1','Vocabulary перевірка','AI officer','todo',25,'indigo'),
-  // Someday tasks
-  { id:'s1', title:'Зробити онбординг для нових клієнтів', project:'ДІС', status:'todo', date:new Date(2026,4,15), someday:true, tagColor:'blue', createdAt:new Date() },
-  { id:'s2', title:'Написати стратегію контенту на квартал', project:'AI officer', status:'todo', date:new Date(2026,4,15), someday:true, tagColor:'indigo', createdAt:new Date() },
-  { id:'s3', title:'Налаштувати автоматичну аналітику', project:'ДІС', status:'todo', date:new Date(2026,4,15), someday:true, tagColor:'blue', createdAt:new Date() },
-];
-
 let nextId = 1000;
 let nextSubId = 100;
+
+// Helper: write updated task to Firestore after a store mutation
+function syncTask(get: () => TaskStore, taskId: string) {
+  const { userId, tasks } = get();
+  if (!userId) return;
+  const task = tasks.find(t => t.id === taskId);
+  if (task) fsSetTask(userId, task);
+}
 
 interface TaskStore {
   tasks: Task[];
   projects: Project[];
   activeProjectFilter: string | null;
   settings: { telegramChatId:string; telegramBotToken:string; email:string; notifyTelegram:boolean; notifyEmail:boolean; };
+
+  // Firestore sync state
+  userId: string | null;
+  isFirestoreLoaded: boolean;
+  setUserId: (uid: string | null) => void;
+  setTasks: (tasks: Task[]) => void;
+  setFirestoreLoaded: (v: boolean) => void;
 
   addTask: (task: Omit<Task,'id'|'createdAt'>) => string;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -122,7 +88,6 @@ interface TaskStore {
   setActiveProjectFilter: (p: string | null) => void;
   updateSettings: (s: Partial<TaskStore['settings']>) => void;
 
-  // Subtasks
   addSubtask: (taskId: string, title: string, date?: Date) => void;
   toggleSubtask: (taskId: string, subId: string) => void;
   deleteSubtask: (taskId: string, subId: string) => void;
@@ -139,66 +104,125 @@ interface TaskStore {
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
-  tasks: INITIAL_TASKS,
+  tasks: [],
   projects: PROJECTS,
   activeProjectFilter: null,
   settings: { telegramChatId:'', telegramBotToken:'', email:'', notifyTelegram:false, notifyEmail:false },
+  userId: null,
+  isFirestoreLoaded: false,
 
+  // ── Firestore sync ─────────────────────────────────────────────────────────
+  setUserId: (uid) => set({ userId: uid }),
+  setTasks: (tasks) => set({ tasks, isFirestoreLoaded: true }),
+  setFirestoreLoaded: (v) => set({ isFirestoreLoaded: v }),
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
   addTask: (task) => {
     const id = `task_${Date.now()}_${nextId++}`;
-    set(s => ({ tasks: [...s.tasks, { ...task, id, createdAt: new Date() }] }));
+    const newTask: Task = { ...task, id, createdAt: new Date() };
+    set(s => ({ tasks: [...s.tasks, newTask] }));
+    const { userId } = get();
+    if (userId) fsSetTask(userId, newTask);
     return id;
   },
-  updateTask: (id, updates) => set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,...updates} : t) })),
-  deleteTask: (id) => set(s => ({ tasks: s.tasks.filter(t => t.id!==id) })),
-  moveTask: (id, newStatus) => set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,status:newStatus} : t) })),
-  moveTaskToDate: (id, newDate) => set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,date:newDate,someday:false} : t) })),
+
+  updateTask: (id, updates) => {
+    set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,...updates} : t) }));
+    syncTask(get, id);
+  },
+
+  deleteTask: (id) => {
+    set(s => ({ tasks: s.tasks.filter(t => t.id!==id) }));
+    const { userId } = get();
+    if (userId) fsDeleteTask(userId, id);
+  },
+
+  moveTask: (id, newStatus) => {
+    set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,status:newStatus} : t) }));
+    syncTask(get, id);
+  },
+
+  moveTaskToDate: (id, newDate) => {
+    set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,date:newDate,someday:false} : t) }));
+    syncTask(get, id);
+  },
+
   copyTaskToDate: (id, newDate) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return;
-    set(s => ({ tasks: [...s.tasks, {...task, id:`task_${Date.now()}_${nextId++}`, date:newDate, status:'todo', someday:false, createdAt:new Date()}] }));
+    const newTask: Task = { ...task, id:`task_${Date.now()}_${nextId++}`, date:newDate, status:'todo', someday:false, createdAt:new Date() };
+    set(s => ({ tasks: [...s.tasks, newTask] }));
+    const { userId } = get();
+    if (userId) fsSetTask(userId, newTask);
   },
-  importTasks: (tasks) => set(s => ({ tasks: [...s.tasks, ...tasks.map(t => ({...t, id:`import_${Date.now()}_${nextId++}`, createdAt:new Date()}))] })),
+
+  importTasks: (tasks) => {
+    const newTasks = tasks.map(t => ({ ...t, id:`import_${Date.now()}_${nextId++}`, createdAt:new Date() }));
+    set(s => ({ tasks: [...s.tasks, ...newTasks] }));
+    const { userId } = get();
+    if (userId) Promise.all(newTasks.map(t => fsSetTask(userId, t)));
+  },
+
   addProject: (name) => {
     const colors: TagColor[] = ['blue','indigo','purple','emerald','amber','rose'];
     set(s => ({ projects: [...s.projects, { id:`proj_${Date.now()}`, name, color: colors[s.projects.length%colors.length] }] }));
   },
+
   setActiveProjectFilter: (p) => set({ activeProjectFilter: p }),
   updateSettings: (s) => set(st => ({ settings: {...st.settings, ...s} })),
 
-  addSubtask: (taskId, title, date) => set(s => ({
-    tasks: s.tasks.map(t => t.id===taskId ? {
-      ...t,
-      subtasks: [...(t.subtasks||[]), { id:`sub_${nextSubId++}`, title, done:false, date }]
-    } : t)
-  })),
-  toggleSubtask: (taskId, subId) => set(s => ({
-    tasks: s.tasks.map(t => t.id===taskId ? {
-      ...t,
-      subtasks: (t.subtasks||[]).map(st => st.id===subId ? {...st,done:!st.done} : st)
-    } : t)
-  })),
-  deleteSubtask: (taskId, subId) => set(s => ({
-    tasks: s.tasks.map(t => t.id===taskId ? {
-      ...t,
-      subtasks: (t.subtasks||[]).filter(st => st.id!==subId)
-    } : t)
-  })),
-  updateSubtask: (taskId, subId, updates) => set(s => ({
-    tasks: s.tasks.map(t => t.id===taskId ? {
-      ...t,
-      subtasks: (t.subtasks||[]).map(st => st.id===subId ? {...st,...updates} : st)
-    } : t)
-  })),
+  addSubtask: (taskId, title, date) => {
+    set(s => ({
+      tasks: s.tasks.map(t => t.id===taskId ? {
+        ...t,
+        subtasks: [...(t.subtasks||[]), { id:`sub_${nextSubId++}`, title, done:false, date }]
+      } : t)
+    }));
+    syncTask(get, taskId);
+  },
+
+  toggleSubtask: (taskId, subId) => {
+    set(s => ({
+      tasks: s.tasks.map(t => t.id===taskId ? {
+        ...t,
+        subtasks: (t.subtasks||[]).map(st => st.id===subId ? {...st,done:!st.done} : st)
+      } : t)
+    }));
+    syncTask(get, taskId);
+  },
+
+  deleteSubtask: (taskId, subId) => {
+    set(s => ({
+      tasks: s.tasks.map(t => t.id===taskId ? {
+        ...t,
+        subtasks: (t.subtasks||[]).filter(st => st.id!==subId)
+      } : t)
+    }));
+    syncTask(get, taskId);
+  },
+
+  updateSubtask: (taskId, subId, updates) => {
+    set(s => ({
+      tasks: s.tasks.map(t => t.id===taskId ? {
+        ...t,
+        subtasks: (t.subtasks||[]).map(st => st.id===subId ? {...st,...updates} : st)
+      } : t)
+    }));
+    syncTask(get, taskId);
+  },
 
   duplicateTask: (id) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return '';
     const newId = `task_${Date.now()}_${nextId++}`;
-    set(s => ({ tasks: [...s.tasks, { ...task, id: newId, status: 'todo', createdAt: new Date() }] }));
+    const newTask: Task = { ...task, id: newId, status: 'todo', createdAt: new Date() };
+    set(s => ({ tasks: [...s.tasks, newTask] }));
+    const { userId } = get();
+    if (userId) fsSetTask(userId, newTask);
     return newId;
   },
 
+  // ── Selectors ──────────────────────────────────────────────────────────────
   getTaskById: (id) => get().tasks.find(t => t.id===id),
 
   getTasksForDay: (date) => {

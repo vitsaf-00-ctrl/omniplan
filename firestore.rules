@@ -1,58 +1,55 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Default deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Primitives ---
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    // ── Helpers ───────────────────────────────────────────────────────────────
     function isAuth() { return request.auth != null; }
+    function isOwner(userId) { return isAuth() && request.auth.uid == userId; }
 
-    // --- Validation Helpers ---
-    function isValidUser(data) {
-      return data.keys().hasAll(['email']) &&
-             data.email is string && data.email.size() <= 200 &&
-             (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
-             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             (!('theme' in data) || (data.theme in ['light', 'dark', 'system'])) &&
-             (!('language' in data) || (data.language is string && data.language.size() <= 10));
+    // ── Personal tasks (users/{userId}/tasks) ─────────────────────────────────
+    // Each user can only read/write their own tasks.
+    match /users/{userId}/tasks/{taskId} {
+      allow read, write: if isOwner(userId);
     }
 
-    function isValidProject(data) {
-      return data.keys().hasAll(['name', 'ownerId', 'createdAt', 'updatedAt']) &&
-             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
-             data.ownerId is string && data.ownerId == request.auth.uid &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 500)) &&
-             data.createdAt is number && data.updatedAt is number;
+    // ── User profile & settings ───────────────────────────────────────────────
+    match /users/{userId} {
+      allow get: if isAuth() && request.auth.uid == userId;
+      allow create, update: if isOwner(userId);
     }
 
-    function isValidProjectMember(data) {
-      return data.keys().hasAll(['userId', 'role', 'joinedAt']) &&
-             data.userId is string && data.userId.size() <= 128 &&
-             data.role in ['owner', 'editor', 'viewer'] &&
-             data.joinedAt is number;
+    // ── Invites (global collection) ───────────────────────────────────────────
+    // Sender can create/delete their own invites.
+    // Receiver can read invites addressed to their email and update the status.
+    match /invites/{inviteId} {
+      allow read: if isAuth() && (
+        resource.data.fromUid == request.auth.uid ||
+        resource.data.toEmail == request.auth.token.email
+      );
+      allow create: if isAuth() &&
+        request.resource.data.fromUid == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.toEmail is string &&
+        request.resource.data.toEmail.size() > 3;
+      allow update: if isAuth() &&
+        resource.data.toEmail == request.auth.token.email &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status in ['accepted', 'rejected'];
+      allow delete: if isAuth() && resource.data.fromUid == request.auth.uid;
     }
 
-    function isValidTask(data, projectId) {
-      return data.keys().hasAll(['projectId', 'title', 'status', 'creatorId', 'createdAt', 'updatedAt']) &&
-             data.projectId == projectId &&
-             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
-             data.status in ['todo', 'in_progress', 'done'] &&
-             data.creatorId is string && data.creatorId == request.auth.uid &&
-             data.createdAt is number && data.updatedAt is number &&
-             (!('description' in data) || (data.description is string && data.description.size() <= 2000)) &&
-             (!('assigneeId' in data) || (data.assigneeId is string && data.assigneeId.size() <= 128)) &&
-             (!('dueDate' in data) || (data.dueDate is number));
-    }
+    // ── Legacy project-based collections (kept for backward compatibility) ─────
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
 
     function isProjectMember(projectId) {
       return exists(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid));
     }
-    
+
     function getMemberRole(projectId) {
       return get(/databases/$(database)/documents/projects/$(projectId)/members/$(request.auth.uid)).data.role;
     }
@@ -62,61 +59,21 @@ service cloud.firestore {
       return role == 'owner' || role == 'editor';
     }
 
-    // --- Collections ---
-    match /users/{userId} {
-      allow get: if isAuth() && isValidId(userId);
-      allow list: if isAuth(); 
-      allow create: if isAuth() && request.auth.uid == userId && isValidUser(incoming()) && incoming().keys().size() <= 5;
-      allow update: if isAuth() && request.auth.uid == userId && isValidUser(incoming()) &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'theme', 'language']);
-    }
-
     match /projects/{projectId} {
       allow get: if isAuth() && isValidId(projectId) && isProjectMember(projectId);
-      allow list: if false; 
-
-      allow create: if isAuth() && isValidId(projectId) && isValidProject(incoming()) && incoming().keys().size() <= 5;
-      allow update: if isAuth() && isValidId(projectId) && isValidProject(incoming()) &&
-                    isProjectOwnerOrEditor(projectId) &&
-                    incoming().ownerId == existing().ownerId &&
-                    incoming().createdAt == existing().createdAt &&
-                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'updatedAt']);
+      allow list: if false;
+      allow create: if isAuth() && isValidId(projectId);
+      allow update: if isAuth() && isValidId(projectId) && isProjectOwnerOrEditor(projectId);
       allow delete: if isAuth() && isValidId(projectId) && getMemberRole(projectId) == 'owner';
 
       match /members/{memberId} {
-        allow get: if isAuth() && isValidId(projectId) && isValidId(memberId) && isProjectMember(projectId);
-        allow list: if isAuth() && isValidId(projectId) && (resource.data.userId == request.auth.uid || isProjectMember(projectId));
-        allow read: if isAuth() && resource.data.userId == request.auth.uid;
-
-        allow create: if isAuth() && isValidId(projectId) && isValidId(memberId) && memberId == incoming().userId &&
-                      isValidProjectMember(incoming()) && incoming().keys().size() == 3 &&
-                      (isProjectOwnerOrEditor(projectId) || (incoming().role == 'owner' && incoming().userId == request.auth.uid));
-        allow update: if isAuth() && isValidId(projectId) && isValidId(memberId) && isValidProjectMember(incoming()) &&
-                      getMemberRole(projectId) == 'owner' &&
-                      incoming().userId == existing().userId &&
-                      incoming().joinedAt == existing().joinedAt &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['role']);
-        allow delete: if isAuth() && isValidId(projectId) && isValidId(memberId) &&
-                      (getMemberRole(projectId) == 'owner' || request.auth.uid == memberId);
+        allow read: if isAuth() && isValidId(projectId) && isProjectMember(projectId);
+        allow write: if isAuth() && isValidId(projectId) && isProjectOwnerOrEditor(projectId);
       }
 
       match /tasks/{taskId} {
-        allow get: if isAuth() && isValidId(projectId) && isValidId(taskId) && isProjectMember(projectId);
-        allow list: if isAuth() && isValidId(projectId) && isProjectMember(projectId);
-        allow read: if isAuth() && resource.data.assigneeId == request.auth.uid;
-
-        allow create: if isAuth() && isValidId(projectId) && isValidId(taskId) && isValidTask(incoming(), projectId) &&
-                      incoming().keys().size() >= 6 && incoming().keys().size() <= 9 &&
-                      isProjectOwnerOrEditor(projectId);
-        allow update: if isAuth() && isValidId(projectId) && isValidId(taskId) && isValidTask(incoming(), projectId) &&
-                      isProjectMember(projectId) && 
-                      (isProjectOwnerOrEditor(projectId) || existing().assigneeId == request.auth.uid || existing().creatorId == request.auth.uid) &&
-                      incoming().projectId == existing().projectId &&
-                      incoming().creatorId == existing().creatorId &&
-                      incoming().createdAt == existing().createdAt &&
-                      incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'status', 'assigneeId', 'dueDate', 'updatedAt']);
-        allow delete: if isAuth() && isValidId(projectId) && isValidId(taskId) &&
-                      (isProjectOwnerOrEditor(projectId) || existing().creatorId == request.auth.uid);
+        allow read: if isAuth() && isValidId(projectId) && isProjectMember(projectId);
+        allow write: if isAuth() && isValidId(projectId) && isProjectOwnerOrEditor(projectId);
       }
     }
   }
