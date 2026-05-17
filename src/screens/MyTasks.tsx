@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
@@ -25,12 +25,26 @@ function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
   isSelected: boolean;
   onSelect: () => void;
   onDoubleClick: () => void;
-  onContextMenu: (e: React.MouseEvent) => void;
+  onContextMenu: (x: number, y: number) => void;
 }) {
   const { moveTask } = useTaskStore();
   const isIP = task.status === 'in_progress';
   const subtasks = task.subtasks || [];
   const subDone = subtasks.filter(s => s.done).length;
+
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
+  const touchOrigin = useRef({ x: 0, y: 0 });
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]; touchOrigin.current = { x: t.clientX, y: t.clientY };
+    longPressTimer.current = setTimeout(() => onContextMenu(touchOrigin.current.x, touchOrigin.current.y), 500);
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if ((Math.abs(t.clientX - touchOrigin.current.x) > 8 || Math.abs(t.clientY - touchOrigin.current.y) > 8) && longPressTimer.current) {
+      clearTimeout(longPressTimer.current); longPressTimer.current = null;
+    }
+  };
+  const handleTouchEnd = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
 
   return (
     <div
@@ -41,7 +55,10 @@ function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
           : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}`}
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
-      onContextMenu={e => { e.preventDefault(); onContextMenu(e); }}
+      onContextMenu={e => { e.preventDefault(); onContextMenu(e.clientX, e.clientY); }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
       <button
         onClick={e => { e.stopPropagation(); moveTask(task.id, task.status === 'done' ? 'todo' : task.status === 'in_progress' ? 'done' : 'in_progress'); }}
@@ -388,7 +405,7 @@ export function MyTasks() {
                                 isSelected={selectedId === t.id}
                                 onSelect={() => setSelectedId(t.id === selectedId ? null : t.id)}
                                 onDoubleClick={() => openEdit(t)}
-                                onContextMenu={e => setCtx({ x: e.clientX, y: e.clientY, task: t })}
+                                onContextMenu={(x, y) => setCtx({ x, y, task: t })}
                               />
                             </div>
                           )}

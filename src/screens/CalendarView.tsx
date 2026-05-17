@@ -114,7 +114,7 @@ function WeekTaskCard({ task }: { task:Task }) {
     touchDragging.current = false;
     const t = e.touches[0];
     touchOrigin.current = {x: t.clientX, y: t.clientY};
-    longPressTimer.current = setTimeout(openModal, 500);
+    longPressTimer.current = setTimeout(() => setCtx({ x: touchOrigin.current.x, y: touchOrigin.current.y, task }), 500);
   };
   const handleTouchMove = (e: React.TouchEvent) => {
     const t = e.touches[0];
