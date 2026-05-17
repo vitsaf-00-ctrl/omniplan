@@ -40,17 +40,35 @@ export function TaskModal() {
     setNewSubtask('');
   }, [isTaskModalOpen, editingTask, selectedDate]);
 
-  // BUG-03: ESC closes modal with unsaved-changes guard
-  const stateRef = useRef({ title, notes, editingTask, isTaskModalOpen });
-  stateRef.current = { title, notes, editingTask, isTaskModalOpen };
+  // ESC closes modal with unsaved-changes guard (all fields)
+  const stateRef = useRef({ title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask, isTaskModalOpen });
+  stateRef.current = { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask, isTaskModalOpen };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !stateRef.current.isTaskModalOpen) return;
-      const { title, notes, editingTask } = stateRef.current;
+      const { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, editingTask } = stateRef.current;
       const hasChanges = editingTask
-        ? title !== editingTask.title || notes !== (editingTask.notes || '')
-        : title.trim() !== '';
+        ? title !== editingTask.title
+          || notes !== (editingTask.notes || '')
+          || project !== editingTask.project
+          || status !== editingTask.status
+          || date !== format(new Date(editingTask.date), 'yyyy-MM-dd')
+          || someday !== (editingTask.someday || false)
+          || recurring !== (editingTask.recurring || false)
+          || reminder !== (editingTask.reminderEnabled || false)
+          || reminderTime !== (editingTask.reminderTime || '09:00')
+          || priority !== (editingTask.priority || null)
+          || taskTime !== (editingTask.time || '')
+        : title.trim() !== ''
+          || notes.trim() !== ''
+          || project !== PROJECTS[0].name
+          || status !== 'todo'
+          || someday
+          || recurring
+          || reminder
+          || priority !== null
+          || taskTime !== '';
       if (hasChanges) {
         if (window.confirm('Є незбережені зміни. Закрити без збереження?')) {
           setTaskModalOpen(false); setEditingTask(null);

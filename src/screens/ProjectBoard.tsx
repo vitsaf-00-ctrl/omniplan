@@ -73,8 +73,10 @@ function AccordionCol({ title, count, tasks, colorClass, onEdit, onMove, default
   onEdit:(t:Task)=>void; onMove:(id:string,s:TaskStatus)=>void; defaultOpen?:boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const [ctx, setCtx] = useState<Ctx | null>(null);
   return (
     <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+      {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
       <button onClick={() => setOpen(!open)} className={`w-full flex items-center justify-between px-4 py-3 ${colorClass}`}>
         <div className="flex items-center gap-2">
           <span className="text-sm font-black uppercase tracking-wide">{title}</span>
@@ -87,7 +89,8 @@ function AccordionCol({ title, count, tasks, colorClass, onEdit, onMove, default
           {tasks.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Порожньо</p>}
           {tasks.map(t => (
             <div key={t.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-indigo-200 transition-all"
-              onDoubleClick={() => onEdit(t)}>
+              onDoubleClick={() => onEdit(t)}
+              onContextMenu={e => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, task: t }); }}>
               <p className={`text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
               <p className="text-[10px] text-slate-400 mt-0.5">{t.project}</p>
             </div>
@@ -174,7 +177,16 @@ export function ProjectBoard() {
     todo: [], in_progress: [], done: [],
   });
 
-  // Sync colOrder when tasks change (merge to preserve manual order, append new)
+  // Reset order when project filter changes so stale order from another project doesn't bleed through
+  useEffect(() => {
+    setColOrder({
+      todo: backlog.map(t => t.id),
+      in_progress: inprog.map(t => t.id),
+      done: done.map(t => t.id),
+    });
+  }, [activeProjectFilter]);
+
+  // Merge to preserve manual order when tasks are added or deleted within the current filter
   useEffect(() => {
     const merge = (existing: string[], current: string[]) => {
       const set = new Set(current);

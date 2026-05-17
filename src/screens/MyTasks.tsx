@@ -176,9 +176,13 @@ export function MyTasks() {
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     if (source.droppableId !== destination.droppableId) {
-      // Move task to different date
-      const newDate = new Date(destination.droppableId + 'T00:00:00');
-      moveTaskToDate(draggableId, newDate);
+      // Move task to different date and insert at the drop index in the destination group
+      const dstKey = destination.droppableId;
+      moveTaskToDate(draggableId, new Date(dstKey + 'T00:00:00'));
+      const currentDst = getDisplayTasks(dstKey).map(t => t.id);
+      const next = [...currentDst];
+      next.splice(destination.index, 0, draggableId);
+      setGroupOrder(prev => ({ ...prev, [dstKey]: next }));
     } else {
       // Reorder within same day
       const dateKey = source.droppableId;
