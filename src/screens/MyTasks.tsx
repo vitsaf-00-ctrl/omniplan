@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical } from 'lucide-react';
+import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
@@ -120,6 +120,93 @@ function SomedaySection() {
   );
 }
 
+function DateGroup({ dateKey, tasks }: { dateKey: string; tasks: Task[] }) {
+  const [open, setOpen] = useState(false);
+  const { setTaskModalOpen, setEditingTask } = useAppStore();
+  const label = format(new Date(dateKey), 'EEEE, d MMMM', { locale: uk });
+  return (
+    <div className="border border-slate-100 dark:border-slate-700 rounded-lg overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold capitalize text-slate-500">{label}</span>
+          <span className="text-[9px] text-slate-400">{tasks.length}</span>
+        </div>
+        <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}/>
+      </button>
+      {open && (
+        <div className="p-2 space-y-1">
+          {tasks.map(t => (
+            <div key={t.id}
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              onDoubleClick={() => { setEditingTask(t); setTaskModalOpen(true); }}>
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/>
+              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${DOT[t.tagColor] || 'bg-slate-400'}`}/>
+              <span className="text-xs font-medium line-through text-slate-400 flex-1 truncate">{t.title}</span>
+              <span className="text-[9px] text-slate-300 shrink-0 hidden sm:block">{t.project}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonthGroup({ label, tasks }: { label: string; tasks: Task[] }) {
+  const [open, setOpen] = useState(false);
+  const byDate: Record<string, Task[]> = {};
+  tasks.forEach(t => {
+    const k = format(new Date(t.date), 'yyyy-MM-dd');
+    (byDate[k] ??= []).push(t);
+  });
+  const dateKeys = Object.keys(byDate).sort().reverse();
+  return (
+    <div className="border border-slate-100 dark:border-slate-700 rounded-lg overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-3 py-2 bg-slate-50/80 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold capitalize text-slate-600 dark:text-slate-300">{label}</span>
+          <span className="text-[9px] font-bold text-slate-400">{tasks.length} завд.</span>
+        </div>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}/>
+      </button>
+      {open && (
+        <div className="p-2 space-y-1.5">
+          {dateKeys.map(dk => <DateGroup key={dk} dateKey={dk} tasks={byDate[dk]}/>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArchiveSection({ tasks }: { tasks: Task[] }) {
+  const [open, setOpen] = useState(false);
+  if (tasks.length === 0) return null;
+  const byMonth: Record<string, { label: string; tasks: Task[] }> = {};
+  tasks.forEach(t => {
+    const k = format(new Date(t.date), 'yyyy-MM');
+    const label = format(new Date(t.date), 'LLLL yyyy', { locale: uk });
+    if (!byMonth[k]) byMonth[k] = { label, tasks: [] };
+    byMonth[k].tasks.push(t);
+  });
+  const monthKeys = Object.keys(byMonth).sort().reverse();
+  return (
+    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden mt-2">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+        <div className="flex items-center gap-2">
+          <Archive className="w-4 h-4 text-slate-400"/>
+          <span className="text-sm font-black uppercase tracking-wide">Архів</span>
+          <span className="text-xs font-bold bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-slate-600 dark:text-slate-300">{tasks.length}</span>
+        </div>
+        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`}/>
+      </button>
+      {open && (
+        <div className="p-3 space-y-2 bg-white dark:bg-slate-900">
+          {monthKeys.map(k => <MonthGroup key={k} label={byMonth[k].label} tasks={byMonth[k].tasks}/>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function MyTasks() {
   const { tasks, activeProjectFilter, moveTaskToDate } = useTaskStore();
   const { setTaskModalOpen, setEditingTask } = useAppStore();
@@ -134,7 +221,17 @@ export function MyTasks() {
 
   const filtered = tasks.filter(t => {
     if (t.someday) return false;
+    if (t.status === 'done') return false;
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (projectFilter !== 'all' && t.project !== projectFilter) return false;
+    if (activeProjectFilter && t.project !== activeProjectFilter) return false;
+    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+    return true;
+  });
+
+  const archiveTasks = tasks.filter(t => {
+    if (t.status !== 'done') return false;
     if (projectFilter !== 'all' && t.project !== projectFilter) return false;
     if (activeProjectFilter && t.project !== activeProjectFilter) return false;
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
@@ -156,7 +253,7 @@ export function MyTasks() {
   });
 
   const groupKeys = Object.keys(grouped).sort();
-  const totalDone = filtered.filter(t => t.status === 'done').length;
+  const totalDone = archiveTasks.length;
 
   const getDisplayTasks = (dateKey: string): Task[] => {
     const base = grouped[dateKey] || [];
@@ -226,10 +323,10 @@ export function MyTasks() {
             className="w-full pl-8 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
         </div>
         <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
-          {(['all','todo','in_progress','done'] as const).map(s => (
+          {(['all','todo','in_progress'] as const).map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-2 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider ${statusFilter === s ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}>
-              {s === 'all' ? 'Всі' : s === 'todo' ? 'План' : s === 'in_progress' ? 'Процес' : 'Готово'}
+              {s === 'all' ? 'Всі' : s === 'todo' ? 'Заплановано' : 'В процесі'}
             </button>
           ))}
         </div>
@@ -307,6 +404,7 @@ export function MyTasks() {
         </DragDropContext>
 
         <SomedaySection/>
+        <ArchiveSection tasks={archiveTasks}/>
       </div>
     </div>
   );
