@@ -29,7 +29,12 @@ export function ImportModal({ isOpen, onClose }: Props) {
           const statusVal = row['Статус']||row['status'];
           const status = statusVal==='done'||statusVal==='Готово'?'done':statusVal==='in_progress'||statusVal==='В процесі'?'in_progress':'todo';
           let date = new Date();
-          if (row['Дата']||row['date']) { const p=new Date(row['Дата']||row['date']); if(!isNaN(p.getTime())) date=p; }
+          const rawDate = row['Дата'] || row['date'];
+          if (rawDate) {
+            const str = String(rawDate).trim();
+            const p = new Date(str.length === 10 ? str + 'T00:00:00' : str);
+            if (!isNaN(p.getTime()) && p.getFullYear() >= 2000) date = p;
+          }
           return { title, project, status, date, tagColor: getProjectColor(project) };
         }).filter(t=>t.title.trim()) as any[];
         setTimeout(() => { importTasks(mapped); setCount(mapped.length); setStep('success'); }, 1000);

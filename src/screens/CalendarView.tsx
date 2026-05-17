@@ -9,7 +9,7 @@ import { useAppStore } from '../store/useAppStore';
 import { ImportModal } from '../components/ImportModal';
 import { TaskContextMenu } from '../components/TaskContextMenu';
 
-const TODAY = new Date(2026, 4, 15);
+const TODAY = new Date();
 
 const HOUR_PX = 60;
 const TL_START = 8;
