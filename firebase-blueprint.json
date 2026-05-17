@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and preferences.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "theme": { "type": "string", "enum": ["light", "dark", "system"] },
+        "language": { "type": "string" }
+      },
+      "required": ["email"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "A project container for tasks.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["name", "ownerId", "createdAt", "updatedAt"]
+    },
+    "ProjectMember": {
+      "title": "Project Member",
+      "description": "A member of a project.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "editor", "viewer"] },
+        "joinedAt": { "type": "number" }
+      },
+      "required": ["userId", "role", "joinedAt"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task within a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["todo", "in_progress", "done"] },
+        "assigneeId": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "dueDate": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["projectId", "title", "status", "creatorId", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Stores projects."
+    },
+    "/projects/{projectId}/members/{userId}": {
+      "schema": { "$ref": "#/entities/ProjectMember" },
+      "description": "Stores project memberships."
+    },
+    "/projects/{projectId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Stores tasks."
+    }
+  }
+}

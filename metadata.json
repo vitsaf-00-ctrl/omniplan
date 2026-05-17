@@ -1,0 +1,8 @@
+{
+  "name": "Розумний Планувальник",
+  "description": "Додаток для управління проектами, командами та завданнями з підтримкою Kanban, календаря та хмарної синхронізації.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}

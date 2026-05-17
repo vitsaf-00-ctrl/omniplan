@@ -1,0 +1,401 @@
+import { useState } from 'react';
+import { User, Palette, Bell, Link, Shield, Sun, Moon, Send, Mail, Check, Eye, EyeOff, Calendar, Slack, Chrome } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import { useTaskStore } from '../store/useTaskStore';
+
+type Tab = 'profile' | 'appearance' | 'notifications' | 'integrations' | 'security';
+
+function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+  return (
+    <button onClick={onChange} className={`relative w-11 h-6 rounded-full transition-colors ${on ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-slate-600'}`}>
+      <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${on ? 'translate-x-5' : 'translate-x-0.5'}`}/>
+    </button>
+  );
+}
+
+function ProfileTab() {
+  const { user } = useAppStore();
+  const [name, setName] = useState(user?.displayName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [lang, setLang] = useState('uk');
+  const [saved, setSaved] = useState(false);
+
+  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+
+  return (
+    <div className="space-y-5">
+      {/* Avatar */}
+      <div className="flex items-center gap-5">
+        <div className="relative">
+          {user?.photoURL
+            ? <img src={user.photoURL} alt="" className="w-16 h-16 rounded-2xl object-cover"/>
+            : <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-black">
+                {(user?.email || 'U').slice(0, 1).toUpperCase()}
+              </div>
+          }
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-indigo-600 rounded-lg flex items-center justify-center cursor-pointer hover:bg-indigo-700 transition-colors">
+            <User className="w-3 h-3 text-white"/>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm font-bold text-slate-800 dark:text-white">{user?.displayName || user?.email || 'Користувач'}</p>
+          <p className="text-xs text-slate-400 mt-0.5">Натисни іконку щоб змінити фото</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Ім'я</label>
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="Ваше ім'я"
+            className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com"
+            className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Мова інтерфейсу</label>
+          <select value={lang} onChange={e => setLang(e.target.value)}
+            className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+            <option value="uk">🇺🇦 Українська</option>
+            <option value="en">🇬🇧 English</option>
+            <option value="ru">🇷🇺 Русский</option>
+          </select>
+        </div>
+      </div>
+
+      <button onClick={save}
+        className={`w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
+          ${saved ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>
+        {saved && <Check className="w-4 h-4"/>}
+        {saved ? 'Збережено!' : 'Save Changes'}
+      </button>
+    </div>
+  );
+}
+
+function AppearanceTab() {
+  const { theme, toggleTheme } = useAppStore();
+  const [accent, setAccent] = useState<'blue' | 'green' | 'orange' | 'purple'>('blue');
+  const [fontSize, setFontSize] = useState(1); // 0=small 1=medium 2=large
+  const [density, setDensity] = useState<'compact' | 'standard' | 'relaxed'>('standard');
+
+  const accents = [
+    { id: 'blue' as const, label: 'Vibrant Blue', color: '#6366f1' },
+    { id: 'green' as const, label: 'Green', color: '#10b981' },
+    { id: 'orange' as const, label: 'Orange', color: '#f97316' },
+    { id: 'purple' as const, label: 'Purple', color: '#8b5cf6' },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Theme */}
+      <div>
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Тема</label>
+        <div className="grid grid-cols-2 gap-2">
+          {([{ id: 'light', icon: Sun, label: 'Світла' }, { id: 'dark', icon: Moon, label: 'Темна' }] as const).map(t => {
+            const Icon = t.icon;
+            const active = theme === t.id;
+            return (
+              <button key={t.id} onClick={() => { if (theme !== t.id) toggleTheme(); }}
+                className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
+                <Icon className={`w-6 h-6 ${active ? 'text-indigo-600' : 'text-slate-400'}`}/>
+                <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-500'}`}>{t.label}</span>
+                {active && <div className="w-2 h-2 rounded-full bg-indigo-600"/>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Accent color */}
+      <div>
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Колір акценту</label>
+        <div className="grid grid-cols-2 gap-2">
+          {accents.map(a => (
+            <button key={a.id} onClick={() => setAccent(a.id)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border-2 transition-all ${accent === a.id ? 'border-slate-400 dark:border-slate-300' : 'border-slate-200 dark:border-slate-600'}`}>
+              <div className="w-5 h-5 rounded-full shrink-0" style={{ backgroundColor: a.color }}/>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{a.label}</span>
+              {accent === a.id && <Check className="w-4 h-4 text-slate-600 dark:text-white ml-auto shrink-0"/>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Font size */}
+      <div>
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+          Розмір шрифту — <span className="text-indigo-600">{['Малий', 'Середній', 'Великий'][fontSize]}</span>
+        </label>
+        <input type="range" min={0} max={2} step={1} value={fontSize} onChange={e => setFontSize(Number(e.target.value))}
+          className="w-full accent-indigo-600"/>
+        <div className="flex justify-between text-[9px] text-slate-400 mt-1 font-bold uppercase">
+          <span>Small</span><span>Medium</span><span>Large</span>
+        </div>
+      </div>
+
+      {/* Density */}
+      <div>
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Щільність</label>
+        <div className="flex gap-2">
+          {(['compact', 'standard', 'relaxed'] as const).map(d => (
+            <button key={d} onClick={() => setDensity(d)}
+              className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${density === d ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200'}`}>
+              {d === 'compact' ? 'Compact' : d === 'standard' ? 'Standard' : 'Relaxed'}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsTab() {
+  const { settings, updateSettings } = useTaskStore();
+  const [emailAlerts, setEmailAlerts] = useState(settings.notifyEmail);
+  const [desktopAlerts, setDesktopAlerts] = useState(false);
+
+  const testTelegram = async () => {
+    if (!settings.telegramBotToken || !settings.telegramChatId) return alert('Введіть токен і Chat ID');
+    try {
+      await fetch(`https://api.telegram.org/bot${settings.telegramBotToken}/sendMessage`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: settings.telegramChatId, text: '✅ OmniPlan підключено!' }),
+      });
+      alert('Повідомлення надіслано!');
+    } catch { alert('Помилка. Перевірте токен і Chat ID.'); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {[
+        { label: 'Email сповіщення', desc: 'Отримувати нагадування на пошту', on: emailAlerts, toggle: () => { setEmailAlerts(!emailAlerts); updateSettings({ notifyEmail: !emailAlerts }); } },
+        { label: 'Desktop сповіщення', desc: 'Спливаючі сповіщення в браузері', on: desktopAlerts, toggle: () => setDesktopAlerts(!desktopAlerts) },
+      ].map(item => (
+        <div key={item.label} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+          <div>
+            <p className="text-sm font-bold text-slate-800 dark:text-white">{item.label}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{item.desc}</p>
+          </div>
+          <Toggle on={item.on} onChange={item.toggle}/>
+        </div>
+      ))}
+
+      {settings.notifyEmail && (
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Email адреса</label>
+          <input type="email" value={settings.email} onChange={e => updateSettings({ email: e.target.value })}
+            placeholder="your@email.com"
+            className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+        </div>
+      )}
+
+      {/* Telegram */}
+      <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Send className="w-4 h-4 text-blue-500"/>
+            <div>
+              <p className="text-sm font-bold text-slate-800 dark:text-white">Telegram</p>
+              <p className="text-[10px] text-slate-400">Бот нагадувань</p>
+            </div>
+          </div>
+          <Toggle on={settings.notifyTelegram} onChange={() => updateSettings({ notifyTelegram: !settings.notifyTelegram })}/>
+        </div>
+        {settings.notifyTelegram && (
+          <>
+            <div>
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Bot Token</label>
+              <input type="text" value={settings.telegramBotToken} onChange={e => updateSettings({ telegramBotToken: e.target.value })}
+                placeholder="1234567890:AAF..." className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 bg-white dark:bg-slate-700 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+            </div>
+            <div>
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Chat ID</label>
+              <input type="text" value={settings.telegramChatId} onChange={e => updateSettings({ telegramChatId: e.target.value })}
+                placeholder="-1001234567890" className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2 bg-white dark:bg-slate-700 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+            </div>
+            <button onClick={testTelegram} className="w-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-black py-2.5 rounded-xl uppercase tracking-widest transition-all">
+              Надіслати тест
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function IntegrationsTab() {
+  const [connected, setConnected] = useState<Record<string, boolean>>({});
+  const integrations = [
+    { id: 'gcal', name: 'Google Calendar', desc: 'Синхронізація подій і задач', icon: Calendar, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' },
+    { id: 'slack', name: 'Slack', desc: 'Сповіщення в канали Slack', icon: Slack, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' },
+    { id: 'teams', name: 'Microsoft Teams', desc: 'Інтеграція з Teams', icon: Chrome, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' },
+    { id: 'outlook', name: 'Outlook', desc: 'Синхронізація з поштою та календарем', icon: Mail, color: 'bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800' },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {integrations.map(item => {
+        const Icon = item.icon;
+        const isConnected = !!connected[item.id];
+        return (
+          <div key={item.id} className={`flex items-center gap-4 p-4 rounded-xl border ${item.color}`}>
+            <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm shrink-0">
+              <Icon className="w-5 h-5 text-slate-600 dark:text-slate-300"/>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-slate-800 dark:text-white">{item.name}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{item.desc}</p>
+            </div>
+            <button onClick={() => setConnected(c => ({ ...c, [item.id]: !c[item.id] }))}
+              className={`text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg transition-all shrink-0
+                ${isConnected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
+              {isConnected ? '✓ Connected' : 'Connect'}
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SecurityTab() {
+  const [cur, setCur] = useState('');
+  const [next, setNext] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showCur, setShowCur] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    if (!cur || !next || next !== confirm) return;
+    setSaved(true);
+    setCur(''); setNext(''); setConfirm('');
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const sessions = [
+    { device: 'Chrome · Windows 11', location: 'Київ, Україна', time: 'Зараз', current: true },
+    { device: 'Safari · iPhone 15', location: 'Київ, Україна', time: '2 год тому', current: false },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Change password */}
+      <div>
+        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Зміна паролю</h4>
+        <div className="space-y-3">
+          {[
+            { label: 'Поточний пароль', val: cur, set: setCur, show: showCur, toggle: () => setShowCur(!showCur) },
+            { label: 'Новий пароль', val: next, set: setNext, show: false, toggle: () => {} },
+            { label: 'Підтвердити новий пароль', val: confirm, set: setConfirm, show: false, toggle: () => {} },
+          ].map((f, i) => (
+            <div key={i}>
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{f.label}</label>
+              <div className="relative">
+                <input type={f.show || i > 0 ? 'text' : 'password'} value={f.val} onChange={e => f.set(e.target.value)}
+                  className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-2.5 pr-10 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+                {i === 0 && (
+                  <button type="button" onClick={f.toggle} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                    {f.show ? <EyeOff className="w-4 h-4"/> : <Eye className="w-4 h-4"/>}
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          {next && confirm && next !== confirm && (
+            <p className="text-xs text-rose-500 font-semibold">Паролі не збігаються</p>
+          )}
+          <button onClick={save} disabled={!cur || !next || next !== confirm}
+            className={`w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
+              ${saved ? 'bg-emerald-600 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-40'}`}>
+            {saved && <Check className="w-4 h-4"/>}
+            {saved ? 'Пароль змінено!' : 'Змінити пароль'}
+          </button>
+        </div>
+      </div>
+
+      {/* Active sessions */}
+      <div>
+        <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Активні сесії</h4>
+        <div className="space-y-2">
+          {sessions.map((s, i) => (
+            <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+              <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.current ? 'bg-emerald-500' : 'bg-slate-300'}`}/>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-slate-800 dark:text-white">{s.device}</p>
+                <p className="text-[10px] text-slate-400">{s.location} · {s.time}</p>
+              </div>
+              {s.current
+                ? <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg">Поточна</span>
+                : <button className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition-colors">Завершити</button>
+              }
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const TABS: { id: Tab; label: string; icon: typeof User }[] = [
+  { id: 'profile', label: 'Профіль', icon: User },
+  { id: 'appearance', label: 'Вигляд', icon: Palette },
+  { id: 'notifications', label: 'Сповіщення', icon: Bell },
+  { id: 'integrations', label: 'Інтеграції', icon: Link },
+  { id: 'security', label: 'Безпека', icon: Shield },
+];
+
+export function Settings() {
+  const [active, setActive] = useState<Tab>('profile');
+
+  return (
+    <div className="flex flex-col md:flex-row h-full gap-4 overflow-hidden">
+      {/* Tabs sidebar */}
+      <div className="shrink-0 md:w-44">
+        {/* Mobile: horizontal scroll tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
+          {TABS.map(t => {
+            const Icon = t.icon;
+            return (
+              <button key={t.id} onClick={() => setActive(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all shrink-0
+                  ${active === t.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                <Icon className="w-3.5 h-3.5"/>{t.label}
+              </button>
+            );
+          })}
+        </div>
+        {/* Desktop: vertical tabs */}
+        <div className="hidden md:flex flex-col gap-0.5">
+          {TABS.map(t => {
+            const Icon = t.icon;
+            return (
+              <button key={t.id} onClick={() => setActive(t.id)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all text-left w-full
+                  ${active === t.id ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
+                <Icon className="w-4 h-4 shrink-0"/>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-lg mx-auto md:mx-0">
+          <h3 className="text-sm font-black text-slate-800 dark:text-white mb-4">
+            {TABS.find(t => t.id === active)?.label}
+          </h3>
+          {active === 'profile' && <ProfileTab/>}
+          {active === 'appearance' && <AppearanceTab/>}
+          {active === 'notifications' && <NotificationsTab/>}
+          {active === 'integrations' && <IntegrationsTab/>}
+          {active === 'security' && <SecurityTab/>}
+        </div>
+      </div>
+    </div>
+  );
+}
