@@ -394,8 +394,8 @@ export function CalendarView() {
   const todayWeekMonday = startOfWeek(TODAY,{weekStartsOn:1});
   const weekRowRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (viewMode === 'month') weekRowRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
-  }, [viewMode]);
+    if (viewMode === 'month') weekRowRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [viewMode, currentDate]);
 
   const handleDrop = (e:React.DragEvent, day:Date) => { e.preventDefault(); const id=e.dataTransfer.getData('taskId'); if(id) storeMove(id,day); };
   const handleDayPaste = (day:Date) => { if(clipboardTaskId){clipboardMode==='copy'?storeCopy(clipboardTaskId,day):storeMove(clipboardTaskId,day);clearClipboard();} };
@@ -489,8 +489,13 @@ export function CalendarView() {
             if (srcTs === dstTs && result.source.index === result.destination.index) return;
             if (srcTs !== dstTs) {
               storeMove(result.draggableId, new Date(dstTs));
+              setWeekOrder(prev => {
+                const srcOrder = (prev[srcTs] || getWeekColTasks(new Date(srcTs)).map(t => t.id)).filter(id => id !== result.draggableId);
+                const dstOrder = [...(prev[dstTs] || getWeekColTasks(new Date(dstTs)).map(t => t.id)).filter(id => id !== result.draggableId)];
+                dstOrder.splice(result.destination!.index, 0, result.draggableId);
+                return { ...prev, [srcTs]: srcOrder, [dstTs]: dstOrder };
+              });
             } else {
-              const base = getTasksForDay(new Date(srcTs));
               const current = getWeekColTasks(new Date(srcTs)).map(t => t.id);
               const next = [...current];
               const [removed] = next.splice(result.source.index, 1);
