@@ -1,4 +1,4 @@
-import { LayoutGrid, List, Circle, Clock, CheckCircle2, Plus, Repeat, ChevronDown, Table, GripVertical } from 'lucide-react';
+import { LayoutGrid, List, Circle, Clock, CheckCircle2, Plus, Repeat, Table, GripVertical, MoreVertical } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
@@ -33,6 +33,7 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: 
       onContextMenu={e => { e.preventDefault(); onContextMenu(e); }}
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
+      style={{ touchAction: 'none' }}
       className={`p-3 rounded-xl shadow-sm border-b-2 transition-all cursor-pointer select-none
         ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-b-amber-400 ring-2 ring-amber-300/30'
           : task.status === 'done' ? 'bg-slate-50 dark:bg-slate-800/50 border-b-emerald-400 opacity-70'
@@ -43,11 +44,16 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: 
         {task.status === 'done' ? <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
           : isIP ? <Clock className="w-3 h-3 text-amber-500 animate-pulse"/>
           : <Circle className="w-3 h-3 text-slate-300"/>}
-        <span className={`text-[9px] font-black tracking-widest uppercase ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
+        <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
           {task.status === 'done' ? 'ГОТОВО' : isIP ? 'В ПРОЦЕСІ' : 'ЗАПЛАНОВАНО'}
         </span>
-        {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300 ml-auto"/>}
-        <GripVertical className="w-3 h-3 text-slate-200 ml-auto opacity-50"/>
+        {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300"/>}
+        <button
+          onClick={e => { e.stopPropagation(); onContextMenu(e); }}
+          className="p-0.5 rounded text-slate-200 hover:text-slate-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <MoreVertical className="w-3.5 h-3.5"/>
+        </button>
+        <GripVertical className="w-3 h-3 text-slate-200 opacity-50"/>
       </div>
       <p className={`text-sm font-semibold mb-2 leading-snug ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
         {task.title}
@@ -68,38 +74,6 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: 
   );
 }
 
-function AccordionCol({ title, count, tasks, colorClass, onEdit, onMove, defaultOpen=false }: {
-  title:string; count:number; tasks:Task[]; colorClass:string;
-  onEdit:(t:Task)=>void; onMove:(id:string,s:TaskStatus)=>void; defaultOpen?:boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const [ctx, setCtx] = useState<Ctx | null>(null);
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-      {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
-      <button onClick={() => setOpen(!open)} className={`w-full flex items-center justify-between px-4 py-3 ${colorClass}`}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-black uppercase tracking-wide">{title}</span>
-          <span className="text-xs font-bold bg-white/50 dark:bg-black/20 px-2 py-0.5 rounded-full">{count}</span>
-        </div>
-        <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`}/>
-      </button>
-      {open && (
-        <div className="p-3 space-y-2 bg-white dark:bg-slate-900">
-          {tasks.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Порожньо</p>}
-          {tasks.map(t => (
-            <div key={t.id} className="p-3 rounded-xl border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 cursor-pointer hover:border-indigo-200 transition-all"
-              onDoubleClick={() => onEdit(t)}
-              onContextMenu={e => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, task: t }); }}>
-              <p className={`text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{t.project}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function TableView({ tasks, onEdit, onMove }: { tasks:Task[]; onEdit:(t:Task)=>void; onMove:(id:string,s:TaskStatus)=>void }) {
   const [ctx, setCtx] = useState<Ctx | null>(null);
@@ -274,20 +248,12 @@ export function ProjectBoard() {
         </div>
 
         {view === 'board' && (
-          <div className="flex-1 overflow-y-auto">
-            {/* Mobile accordion */}
-            <div className="flex flex-col gap-2 md:hidden">
-              <AccordionCol title="Беклог" count={backlog.length} tasks={backlog} onEdit={edit} onMove={moveTask} colorClass="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200" defaultOpen/>
-              <AccordionCol title="В процесі" count={inprog.length} tasks={inprog} onEdit={edit} onMove={moveTask} colorClass="bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200" defaultOpen/>
-              <AccordionCol title="Завершено" count={done.length} tasks={done} onEdit={edit} onMove={moveTask} colorClass="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200"/>
-            </div>
-
-            {/* Desktop DnD board */}
-            <DragDropContext onDragEnd={onDragEnd}>
-              <div className="hidden md:grid md:grid-cols-3 gap-3 h-full">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex-1 overflow-x-auto overflow-y-hidden">
+              <div className="flex gap-3 h-full" style={{minWidth:'780px'}}>
                 {cols.map(col => (
-                  <div key={col.status} className="bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto">
-                    <div className="flex items-center justify-between mb-3 px-1">
+                  <div key={col.status} className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto min-h-0 min-w-[240px]">
+                    <div className="flex items-center justify-between mb-3 px-1 shrink-0">
                       <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">{col.title}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${col.badge}`}>{col.tasks.length}</span>
                     </div>
@@ -302,7 +268,7 @@ export function ProjectBoard() {
                             <Draggable key={t.id} draggableId={t.id} index={i}>
                               {(prov, snap) => (
                                 <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
-                                  className={snap.isDragging ? 'opacity-80 shadow-xl' : ''}>
+                                  className={`group ${snap.isDragging ? 'opacity-80 shadow-xl' : ''}`}>
                                   <TaskCard
                                     task={t}
                                     isSelected={selectedId === t.id}
@@ -321,8 +287,8 @@ export function ProjectBoard() {
                   </div>
                 ))}
               </div>
-            </DragDropContext>
-          </div>
+            </div>
+          </DragDropContext>
         )}
 
         {view === 'list' && (
