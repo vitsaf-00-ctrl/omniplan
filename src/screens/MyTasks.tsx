@@ -50,10 +50,10 @@ function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
     <div
       className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group select-none
         ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
-          : task.status === 'done' ? 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 opacity-60'
-          : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-600'
-          : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}`}
-      onClick={onSelect}
+          : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500'
+          : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}
+        ${isSelected ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
+      onClick={e => { e.stopPropagation(); onSelect(); }}
       onDoubleClick={onDoubleClick}
       onContextMenu={e => { e.preventDefault(); onContextMenu(e.clientX, e.clientY); }}
       onTouchStart={handleTouchStart}
@@ -363,15 +363,15 @@ export function MyTasks() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-5 pr-0.5" onClick={e => e.stopPropagation()}>
-        {groupKeys.length === 0 && (
-          <div className="text-center py-12">
-            <CheckCircle2 className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
-            <p className="text-sm font-bold text-slate-400">Завдань не знайдено</p>
-          </div>
-        )}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="flex-1 overflow-y-auto space-y-5 pr-0.5" onClick={e => e.stopPropagation()}>
+          {groupKeys.length === 0 && (
+            <div className="text-center py-12">
+              <CheckCircle2 className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
+              <p className="text-sm font-bold text-slate-400">Завдань не знайдено</p>
+            </div>
+          )}
 
-        <DragDropContext onDragEnd={onDragEnd}>
           {groupKeys.map(dateKey => {
             const dayTasks = getDisplayTasks(dateKey);
             const label = format(new Date(dateKey), 'EEEE, d MMMM', {locale: uk});
@@ -380,26 +380,20 @@ export function MyTasks() {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest capitalize">{label}</span>
                   <div className="flex-1 h-px bg-slate-100 dark:bg-slate-700"/>
-                  <span className="text-[9px] font-bold text-slate-300">
-                    {dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length}
-                  </span>
+                  <span className="text-[9px] font-bold text-slate-300">{dayTasks.length}</span>
                 </div>
                 <Droppable droppableId={dateKey}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-1.5 rounded-xl transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}
+                      className={`space-y-1.5 rounded-xl transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50 dark:bg-indigo-900/10 p-1' : ''}`}
                     >
                       {dayTasks.map((t, index) => (
                         <Draggable key={t.id} draggableId={t.id} index={index}>
                           {(prov, snap) => (
-                            <div
-                              ref={prov.innerRef}
-                              {...prov.draggableProps}
-                              {...prov.dragHandleProps}
-                              className={snap.isDragging ? 'opacity-80 shadow-lg' : ''}
-                            >
+                            <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
+                              className={snap.isDragging ? 'opacity-80 shadow-lg' : ''}>
                               <TaskRow
                                 task={t}
                                 isSelected={selectedId === t.id}
@@ -418,11 +412,11 @@ export function MyTasks() {
               </div>
             );
           })}
-        </DragDropContext>
 
-        <SomedaySection/>
-        <ArchiveSection tasks={archiveTasks}/>
-      </div>
+          <SomedaySection/>
+          <ArchiveSection tasks={archiveTasks}/>
+        </div>
+      </DragDropContext>
     </div>
   );
 }

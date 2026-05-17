@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 
 export function TaskModal() {
   const { isTaskModalOpen, setTaskModalOpen, editingTask, setEditingTask, selectedDate } = useAppStore();
-  const { addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, updateSubtask } = useTaskStore();
+  const { tasks, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, updateSubtask } = useTaskStore();
 
   const [title, setTitle] = useState('');
   const [project, setProject] = useState(PROJECTS[0].name);
@@ -123,7 +123,9 @@ export function TaskModal() {
   const deleteLocalSubtask = (id: string) =>
     setLocalSubtasks(prev => prev.filter(st => st.id !== id));
 
-  const subtasks = editingTask ? (editingTask.subtasks || []) : localSubtasks;
+  // Read live subtasks from store so changes (add/toggle/delete) are reflected instantly
+  const liveTask = editingTask ? tasks.find(t => t.id === editingTask.id) || null : null;
+  const subtasks = editingTask ? (liveTask?.subtasks || []) : localSubtasks;
   const subtasksDone = subtasks.filter(s => s.done).length;
 
   const statuses: {v:TaskStatus;l:string;c:string}[] = [

@@ -49,6 +49,7 @@ type Ctx = { x: number; y: number; task: Task };
 // Monday-style pill task
 function TaskPill({ task, compact }: { task:Task; compact?:boolean }) {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
+  const { moveTask } = useTaskStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status==='done', isIP = task.status==='in_progress';
   const pill = isDone ? PILL_DONE : isIP ? PILL_IP : PILL_COLORS[task.tagColor]||PILL_COLORS.slate;
@@ -57,7 +58,7 @@ function TaskPill({ task, compact }: { task:Task; compact?:boolean }) {
     <>
       <div draggable onDragStart={e=>e.dataTransfer.setData('taskId',task.id)}
         onDoubleClick={e=>{e.stopPropagation();setEditingTask(task);setTaskModalOpen(true);}}
-        onClick={e=>e.stopPropagation()}
+        onClick={e=>{e.stopPropagation();moveTask(task.id,isDone?'todo':'done');}}
         onContextMenu={e=>{e.preventDefault();e.stopPropagation();setCtx({x:e.clientX,y:e.clientY,task});}}
         className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 ${pill}`}
         title={task.title}>
@@ -72,6 +73,7 @@ function TaskPill({ task, compact }: { task:Task; compact?:boolean }) {
 
 function MonthTaskDot({ task }: { task: Task }) {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
+  const { moveTask } = useTaskStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
   const pill = isDone ? PILL_DONE : isIP ? PILL_IP : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
@@ -81,7 +83,7 @@ function MonthTaskDot({ task }: { task: Task }) {
         draggable
         onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); }}
         onDoubleClick={e => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); }}
-        onClick={e => e.stopPropagation()}
+        onClick={e => { e.stopPropagation(); moveTask(task.id, isDone ? 'todo' : 'done'); }}
         onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtx({x:e.clientX,y:e.clientY,task}); }}
         title={task.title}
         className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 ${pill}`}
@@ -180,11 +182,14 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {tasks.length===0&&<div className="text-center py-8 text-slate-400 text-sm">Задач на цей день немає</div>}
         {tasks.map(t=>(
-          <div key={t.id} className={`p-3 rounded-xl border-l-4 cursor-pointer hover:shadow-md transition-all ${TAG_BG[t.tagColor]||TAG_BG.slate} ${t.status==='done'?'opacity-60':''}`}
-            onClick={()=>{setEditingTask(t);setTaskModalOpen(true);}}>
+          <div key={t.id} className={`p-3 rounded-xl border-l-4 hover:shadow-md transition-all ${TAG_BG[t.tagColor]||TAG_BG.slate} ${t.status==='done'?'opacity-60':''}`}
+            onDoubleClick={()=>{setEditingTask(t);setTaskModalOpen(true);}}>
             <div className="flex items-center gap-2 mb-1">
-              {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse"/>:<Circle className="w-3.5 h-3.5 text-slate-300"/>}
+              <button onClick={e=>{e.stopPropagation();moveTask(t.id,t.status==='done'?'todo':'done');}} className="shrink-0">
+                {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse"/>:<Circle className="w-3.5 h-3.5 text-slate-300 hover:text-emerald-500 transition-colors"/>}
+              </button>
               {t.recurring&&<Repeat className="w-3 h-3 opacity-50"/>}
+              <button onClick={()=>{setEditingTask(t);setTaskModalOpen(true);}} className="text-[10px] opacity-50 hover:opacity-100 ml-auto font-bold">редаг.</button>
             </div>
             <p className={`text-sm font-semibold ${t.status==='done'?'line-through':''}`}>{t.title}</p>
             <p className="text-[10px] opacity-60 font-bold mt-0.5">{t.project}</p>
@@ -202,82 +207,68 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
   );
 }
 
-function TimelineView({ weekDays }: { weekDays: Date[] }) {
+function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; onNext: ()=>void }) {
   const { getTasksForDay } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
 
   const hours = Array.from({ length: TL_HOURS }, (_, i) => i + TL_START);
+  const isToday = isSameDay(day, TODAY);
+  const allTasks = getTasksForDay(day);
+  const timeless = allTasks.filter(t => !t.someday && !t.time && (!t.reminderTime || !t.reminderTime.trim()));
+  const timed = allTasks.filter(t => !t.someday && !!(t.time || t.reminderTime));
 
   const now = new Date();
   const nowTop = (now.getHours() - TL_START) * HOUR_PX + (now.getMinutes() / 60) * HOUR_PX;
-  const showNow = now.getHours() >= TL_START && now.getHours() <= TL_END
-    && weekDays.some(d => isSameDay(d, now));
+  const showNow = isToday && now.getHours() >= TL_START && now.getHours() <= TL_END;
 
   const timeToTop = (t: string) => {
     const [h, m] = t.split(':').map(Number);
     return (h - TL_START) * HOUR_PX + (m / 60) * HOUR_PX;
   };
 
-  const hasTimeless = weekDays.some(d =>
-    getTasksForDay(d).some(t => !t.someday && !t.time && (!t.reminderTime || t.reminderTime.trim() === ''))
-  );
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* "Без часу" row */}
-      {hasTimeless && (
-        <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/30">
-          <div className="flex items-start">
-            <div className="w-14 shrink-0 px-1.5 py-2 flex items-center justify-end">
-              <span className="text-[7px] text-slate-400 font-black uppercase tracking-widest text-right leading-tight">Без<br/>часу</span>
-            </div>
-            <div className="flex-1 grid divide-x divide-slate-100 dark:divide-slate-700" style={{gridTemplateColumns:'repeat(7, 1fr)'}}>
-              {weekDays.map((day, i) => {
-                const timeless = getTasksForDay(day).filter(t => !t.someday && !t.time && (!t.reminderTime || t.reminderTime.trim() === ''));
-                return (
-                  <div key={i} className="p-1 space-y-0.5 min-h-[28px]">
-                    {timeless.map(t => (
-                      <div key={t.id}
-                        onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold truncate cursor-pointer border-l-[3px] ${TL_COLORS[t.tagColor] || TL_COLORS.slate}`}>
-                        {t.title}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
+      {/* Day navigation header */}
+      <div className="shrink-0 border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={onPrev} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><ChevronLeft className="w-4 h-4"/></button>
+          <div className="text-center">
+            <p className={`text-sm font-black capitalize ${isToday ? 'text-indigo-600' : 'text-slate-800 dark:text-white'}`}>
+              {format(day, 'EEEE', { locale: uk })}
+            </p>
+            <p className="text-xs text-slate-400">{format(day, 'd MMMM yyyy', { locale: uk })}</p>
+          </div>
+          <button onClick={onNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><ChevronRight className="w-4 h-4"/></button>
+        </div>
+      </div>
+
+      {/* "Без часу" strip */}
+      {timeless.length > 0 && (
+        <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/30 px-4 py-2">
+          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Без часу</p>
+          <div className="flex flex-wrap gap-1">
+            {timeless.map(t => (
+              <div key={t.id}
+                onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] ${TL_COLORS[t.tagColor] || TL_COLORS.slate}`}>
+                {t.title}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Sticky day headers */}
-      <div className="shrink-0 border-b-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-        <div className="flex">
-          <div className="w-14 shrink-0" />
-          <div className="flex-1 grid divide-x divide-slate-200 dark:divide-slate-700" style={{gridTemplateColumns:'repeat(7, 1fr)'}}>
-            {weekDays.map((day, i) => {
-              const isToday = isSameDay(day, TODAY);
-              return (
-                <div key={i} className={`py-2 text-center ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
-                  <p className={`text-[9px] font-black uppercase tracking-wider ${isToday ? 'text-indigo-500' : 'text-slate-400'}`}>
-                    {format(day, 'EEE', { locale: uk })}
-                  </p>
-                  <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-black mt-0.5
-                    ${isToday ? 'bg-indigo-600 text-white' : 'text-slate-800 dark:text-white'}`}>
-                    {format(day, 'd')}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* Add task shortcut */}
+      <div className="shrink-0 px-4 py-2 border-b border-slate-100 dark:border-slate-700">
+        <button onClick={() => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); }}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
+          <Plus className="w-3.5 h-3.5"/> Додати задачу
+        </button>
       </div>
 
-      {/* Scrollable timeline body */}
+      {/* Scrollable timeline — single day */}
       <div className="flex-1 overflow-y-auto">
         <div className="flex" style={{height:`${TL_HOURS * HOUR_PX}px`}}>
-          {/* Time labels column */}
           <div className="w-14 shrink-0 relative select-none">
             {hours.map(h => (
               <div key={h} className="absolute right-0 w-full flex justify-end pr-2"
@@ -286,60 +277,45 @@ function TimelineView({ weekDays }: { weekDays: Date[] }) {
               </div>
             ))}
           </div>
-
-          {/* Grid area */}
-          <div className="flex-1 relative">
-            {/* Hour lines */}
+          <div className={`flex-1 relative ${isToday ? 'bg-indigo-50/20 dark:bg-indigo-900/5' : ''}`}
+            onClick={() => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); }}>
             {hours.map(h => (
               <div key={h} className="absolute w-full border-t border-slate-100 dark:border-slate-700/50"
-                style={{top:`${(h - TL_START) * HOUR_PX}px`}} />
+                style={{top:`${(h - TL_START) * HOUR_PX}px`}}/>
             ))}
-
-            {/* Day columns */}
-            <div className="absolute inset-0 grid divide-x divide-slate-100 dark:divide-slate-700/50"
-              style={{gridTemplateColumns:'repeat(7, 1fr)'}}>
-              {weekDays.map((day, di) => {
-                const isToday = isSameDay(day, TODAY);
-                const timed = getTasksForDay(day).filter(t => !t.someday && !!(t.time || t.reminderTime));
-                return (
-                  <div key={di} className={`relative ${isToday ? 'bg-indigo-50/40 dark:bg-indigo-900/5' : ''}`}
-                    onClick={() => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); }}>
-                    {timed.map(t => {
-                      const timeStr = t.time || t.reminderTime || '';
-                      const [h, m] = timeStr.split(':').map(Number);
-                      if (!timeStr || h < TL_START || h > TL_END) return null;
-                      const top = timeToTop(timeStr);
-                      const col = TL_COLORS[t.tagColor] || TL_COLORS.slate;
-                      const isDone = t.status === 'done';
-                      return (
-                        <div key={t.id}
-                          onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
-                          className={`absolute left-1 right-1 rounded-md border-l-[3px] px-1.5 py-1 cursor-pointer hover:brightness-95 transition-all ${col} ${isDone ? 'opacity-50' : ''}`}
-                          style={{top:`${top}px`, minHeight:'40px', zIndex:1}}>
-                          <p className={`text-[10px] font-bold leading-tight truncate ${isDone ? 'line-through' : ''}`}>{t.title}</p>
-                          <p className="text-[9px] opacity-60 font-medium">{t.time || t.reminderTime}</p>
-                          {t.subtasks && t.subtasks.length > 0 && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">
-                                <div className="h-full bg-current opacity-60 rounded-full" style={{width:`${Math.round((t.subtasks.filter(s=>s.done).length/t.subtasks.length)*100)}%`}}/>
-                              </div>
-                              <span className="text-[8px] opacity-60 font-bold shrink-0">{t.subtasks.filter(s=>s.done).length}/{t.subtasks.length}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Current time red line */}
+            {hours.map(h => (
+              <div key={`half-${h}`} className="absolute w-full border-t border-dashed border-slate-50 dark:border-slate-700/20"
+                style={{top:`${(h - TL_START) * HOUR_PX + HOUR_PX / 2}px`}}/>
+            ))}
+            {timed.map(t => {
+              const timeStr = t.time || t.reminderTime || '';
+              const [h] = timeStr.split(':').map(Number);
+              if (!timeStr || h < TL_START || h > TL_END) return null;
+              const top = timeToTop(timeStr);
+              const col = TL_COLORS[t.tagColor] || TL_COLORS.slate;
+              const isDone = t.status === 'done';
+              return (
+                <div key={t.id}
+                  onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
+                  className={`absolute left-2 right-2 rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${col} ${isDone ? 'opacity-50' : ''}`}
+                  style={{top:`${top}px`, minHeight:'44px', zIndex:1}}>
+                  <p className={`text-xs font-bold leading-tight ${isDone ? 'line-through' : ''}`}>{t.title}</p>
+                  <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time || t.reminderTime} · {t.project}</p>
+                  {t.subtasks && t.subtasks.length > 0 && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-current opacity-60 rounded-full" style={{width:`${Math.round((t.subtasks.filter(s=>s.done).length/t.subtasks.length)*100)}%`}}/>
+                      </div>
+                      <span className="text-[8px] opacity-60 font-bold shrink-0">{t.subtasks.filter(s=>s.done).length}/{t.subtasks.length}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {showNow && (
-              <div className="absolute w-full flex items-center pointer-events-none z-20"
-                style={{top:`${nowTop}px`}}>
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 -ml-1 shadow-sm" />
-                <div className="flex-1 h-[2px] bg-red-500" />
+              <div className="absolute w-full flex items-center pointer-events-none z-20" style={{top:`${nowTop}px`}}>
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0 -ml-1 shadow-sm"/>
+                <div className="flex-1 h-[2px] bg-red-500"/>
               </div>
             )}
           </div>
@@ -403,18 +379,18 @@ export function CalendarView() {
 
   const prevLabel = viewMode==='month'
     ? format(currentDate,'LLLL yyyy',{locale:uk})
-    : viewMode==='day'
+    : (viewMode==='day' || viewMode==='timeline')
     ? format(dayDate,'d MMMM',{locale:uk})
     : `${format(weekStart,'d MMM',{locale:uk})} – ${format(addDays(weekStart,6),'d MMM',{locale:uk})}`;
 
   const prev = () => {
     if(viewMode==='month') setCurrentDate(d=>addMonths(d,-1));
-    else if(viewMode==='day') setDayDate(d=>addDays(d,-1));
+    else if(viewMode==='day' || viewMode==='timeline') setDayDate(d=>addDays(d,-1));
     else setCurrentDate(d=>addDays(d,-7));
   };
   const next = () => {
     if(viewMode==='month') setCurrentDate(d=>addMonths(d,1));
-    else if(viewMode==='day') setDayDate(d=>addDays(d,1));
+    else if(viewMode==='day' || viewMode==='timeline') setDayDate(d=>addDays(d,1));
     else setCurrentDate(d=>addDays(d,7));
   };
 
@@ -450,7 +426,7 @@ export function CalendarView() {
           {activeProjectFilter&&<span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-lg hidden sm:block"># {activeProjectFilter}</span>}
           <div className="flex bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
             {(['month','week','timeline','day'] as const).map(m=>(
-              <button key={m} onClick={()=>{ setViewMode(m); if(m==='day') setDayDate(TODAY); }}
+              <button key={m} onClick={()=>{ setViewMode(m); if(m==='day'||m==='timeline') setDayDate(TODAY); }}
                 className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
                 {m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}
               </button>
@@ -467,7 +443,7 @@ export function CalendarView() {
 
       {viewMode==='timeline' ? (
         <div className="flex-1 overflow-hidden">
-          <TimelineView weekDays={weekDays}/>
+          <TimelineView day={dayDate} onPrev={prev} onNext={next}/>
         </div>
       ) : viewMode==='week' ? (
         // WEEK — horizontal scroll on mobile, 120px min per column, DnD for reordering
@@ -506,7 +482,7 @@ export function CalendarView() {
           return (
             <DragDropContext onDragEnd={onWeekDragEnd}>
               <div className="flex-1 overflow-auto">
-                <div className="grid" style={{gridTemplateColumns:'repeat(7, minmax(120px, 1fr))'}}>
+                <div className="grid" style={{gridTemplateColumns:'repeat(7, minmax(180px, 1fr))'}}>
                   {weekDays.map((day, i) => {
                     const isToday = isSameDay(day, TODAY);
                     const dayTasks = getWeekColTasks(day);
