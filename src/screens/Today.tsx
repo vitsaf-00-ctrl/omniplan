@@ -179,7 +179,7 @@ export function Today() {
       {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
 
       {/* Hero header */}
-      <div className={`bg-gradient-to-br ${grad} rounded-2xl p-5 mb-4 text-white relative overflow-hidden shrink-0`}>
+      <div className={`bg-gradient-to-br ${grad} rounded-2xl p-4 mb-3 text-white relative overflow-hidden shrink-0`}>
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-2 right-4 text-8xl font-black text-white/20">{format(TODAY,'d')}</div>
         </div>
@@ -187,22 +187,22 @@ export function Today() {
         <h1 className="text-2xl font-black mb-1">Мій день</h1>
         <p className="text-white/80 text-sm font-medium capitalize">{dayFull}</p>
 
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
-          <div className="bg-white/20 rounded-xl px-3 py-1.5 text-center">
-            <p className="text-lg font-black">{todayTotal}</p>
-            <p className="text-[9px] text-white/70 uppercase font-bold">Всього</p>
+        <div className="grid grid-cols-4 gap-1.5 mt-3">
+          <div className="bg-white/20 rounded-lg px-1 py-1.5 text-center">
+            <p className="text-base font-black">{todayTotal}</p>
+            <p className="text-[8px] text-white/70 uppercase font-bold leading-tight">Всього</p>
           </div>
-          <div className="bg-white/20 rounded-xl px-3 py-1.5 text-center">
-            <p className="text-lg font-black">{todayInprog}</p>
-            <p className="text-[9px] text-white/70 uppercase font-bold">В процесі</p>
+          <div className="bg-white/20 rounded-lg px-1 py-1.5 text-center">
+            <p className="text-base font-black">{todayInprog}</p>
+            <p className="text-[8px] text-white/70 uppercase font-bold leading-tight">В процесі</p>
           </div>
-          <div className="bg-white/20 rounded-xl px-3 py-1.5 text-center">
-            <p className="text-lg font-black">{todayDone}</p>
-            <p className="text-[9px] text-white/70 uppercase font-bold">Виконано</p>
+          <div className="bg-white/20 rounded-lg px-1 py-1.5 text-center">
+            <p className="text-base font-black">{todayDone}</p>
+            <p className="text-[8px] text-white/70 uppercase font-bold leading-tight">Виконано</p>
           </div>
-          <div className="bg-white/20 rounded-xl px-3 py-1.5 text-center">
-            <p className="text-lg font-black">{todayPct}%</p>
-            <p className="text-[9px] text-white/70 uppercase font-bold">% дня</p>
+          <div className="bg-white/20 rounded-lg px-1 py-1.5 text-center">
+            <p className="text-base font-black">{todayPct}%</p>
+            <p className="text-[8px] text-white/70 uppercase font-bold leading-tight">% Дня</p>
           </div>
         </div>
       </div>

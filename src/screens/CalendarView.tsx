@@ -71,9 +71,10 @@ function TaskPill({ task, compact }: { task:Task; compact?:boolean }) {
   );
 }
 
-function MonthTaskDot({ task }: { task: Task }) {
+function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
+  task: Task; dayTs: number; isSelected: boolean; onSelect: (x: number, y: number) => void;
+}) {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
-  const { moveTask } = useTaskStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
   const pill = isDone ? PILL_DONE : isIP ? PILL_IP : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
@@ -81,12 +82,13 @@ function MonthTaskDot({ task }: { task: Task }) {
     <>
       <div
         draggable
-        onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); }}
+        onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); }}
         onDoubleClick={e => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); }}
-        onClick={e => { e.stopPropagation(); moveTask(task.id, isDone ? 'todo' : 'done'); }}
+        onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onSelect(r.left, r.top); }}
         onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtx({x:e.clientX,y:e.clientY,task}); }}
         title={task.title}
-        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 ${pill}`}
+        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 transition-all
+          ${isSelected ? 'ring-4 ring-indigo-600 shadow-lg bg-indigo-100 text-indigo-900' : pill}`}
       >
         {isIP && <Clock className="w-2.5 h-2.5 shrink-0 animate-pulse"/>}
         {task.recurring && <Repeat className="w-2.5 h-2.5 shrink-0 opacity-70"/>}
@@ -356,10 +358,12 @@ export function CalendarView() {
   const [dayDate, setDayDate] = useState(TODAY);
   const [importOpen, setImportOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
-  // BUG-07: local week-view task order per day (timestamp → task id array)
   const [weekOrder, setWeekOrder] = useState<Record<number, string[]>>({});
+  const [monthDayOrder, setMonthDayOrder] = useState<Record<number, string[]>>({});
+  const [dragOverInfo, setDragOverInfo] = useState<{dayTs: number; taskId: string} | null>(null);
+  const [selectedCal, setSelectedCal] = useState<{taskId: string; task: Task; x: number; y: number} | null>(null);
 
-  const { getTasksForDay, moveTaskToDate, copyTaskToDate, activeProjectFilter } = useTaskStore();
+  const { getTasksForDay, moveTask, moveTaskToDate, copyTaskToDate, activeProjectFilter } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate, clipboardTaskId, clipboardMode, clearClipboard } = useAppStore();
   const { moveTaskToDate: storeMove, copyTaskToDate: storeCopy } = useTaskStore();
 
@@ -372,8 +376,49 @@ export function CalendarView() {
   useEffect(() => {
     if (viewMode === 'month') weekRowRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   }, [viewMode, currentDate]);
+  useEffect(() => { setSelectedCal(null); }, [viewMode]);
 
-  const handleDrop = (e:React.DragEvent, day:Date) => { e.preventDefault(); const id=e.dataTransfer.getData('taskId'); if(id) storeMove(id,day); };
+  const getMonthDayTasks = (day: Date): Task[] => {
+    const base = getTasksForDay(day);
+    const order = monthDayOrder[day.getTime()];
+    if (!order || order.length === 0) return base;
+    const map = new Map(base.map(t => [t.id, t]));
+    const ordered = order.map(id => map.get(id)).filter(Boolean) as Task[];
+    const inOrder = new Set(order);
+    base.forEach(t => { if (!inOrder.has(t.id)) ordered.push(t); });
+    return ordered;
+  };
+
+  const handleMonthTaskDrop = (e: React.DragEvent, targetDay: Date, targetTaskId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = e.dataTransfer.getData('taskId');
+    const srcDayTs = Number(e.dataTransfer.getData('srcDay'));
+    if (!draggedId || draggedId === targetTaskId) { setDragOverInfo(null); return; }
+    const targetTs = targetDay.getTime();
+    if (srcDayTs === targetTs) {
+      const ids = getMonthDayTasks(targetDay).map(t => t.id);
+      const srcIdx = ids.indexOf(draggedId);
+      const dstIdx = ids.indexOf(targetTaskId);
+      if (srcIdx === -1 || dstIdx === -1) { setDragOverInfo(null); return; }
+      const next = [...ids];
+      next.splice(srcIdx, 1);
+      next.splice(dstIdx, 0, draggedId);
+      setMonthDayOrder(prev => ({ ...prev, [targetTs]: next }));
+    } else {
+      storeMove(draggedId, targetDay);
+      setMonthDayOrder(prev => {
+        const srcOrder = (prev[srcDayTs] || getTasksForDay(new Date(srcDayTs)).map(t => t.id)).filter(id => id !== draggedId);
+        const dstOrder = (prev[targetTs] ? prev[targetTs].filter(id => id !== draggedId) : getTasksForDay(targetDay).map(t => t.id).filter(id => id !== draggedId));
+        const dstIdx = dstOrder.indexOf(targetTaskId);
+        dstOrder.splice(dstIdx >= 0 ? dstIdx : dstOrder.length, 0, draggedId);
+        return { ...prev, [srcDayTs]: srcOrder, [targetTs]: dstOrder };
+      });
+    }
+    setDragOverInfo(null);
+  };
+
+  const handleDrop = (e:React.DragEvent, day:Date) => { e.preventDefault(); const id=e.dataTransfer.getData('taskId'); if(id) storeMove(id,day); setDragOverInfo(null); };
   const handleDayPaste = (day:Date) => { if(clipboardTaskId){clipboardMode==='copy'?storeCopy(clipboardTaskId,day):storeMove(clipboardTaskId,day);clearClipboard();} };
   const openNew = (day:Date) => { if(clipboardTaskId){handleDayPaste(day);}else{setSelectedDate(day);setEditingTask(null);setTaskModalOpen(true);} };
 
@@ -412,7 +457,28 @@ export function CalendarView() {
   );
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" onClick={() => setSelectedCal(null)}>
+      {/* Selected task mini-menu */}
+      {selectedCal && (
+        <div className="fixed z-[200] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex items-stretch overflow-hidden"
+          style={{left: Math.min(selectedCal.x, window.innerWidth - 210), top: Math.max(selectedCal.y - 46, 8)}}
+          onClick={e => e.stopPropagation()}>
+          <button onClick={() => { moveTask(selectedCal.taskId, selectedCal.task.status === 'done' ? 'todo' : 'done'); setSelectedCal(null); }}
+            className="px-3 py-1.5 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors whitespace-nowrap">
+            ✓ {selectedCal.task.status === 'done' ? 'Скасувати' : 'Виконано'}
+          </button>
+          <div className="w-px bg-slate-200 dark:bg-slate-700"/>
+          <button onClick={() => { setEditingTask(selectedCal.task); setTaskModalOpen(true); setSelectedCal(null); }}
+            className="px-3 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors whitespace-nowrap">
+            ✏️ Редагувати
+          </button>
+          <div className="w-px bg-slate-200 dark:bg-slate-700"/>
+          <button onClick={() => setSelectedCal(null)}
+            className="px-2.5 py-1.5 text-[11px] font-bold text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+            ✕
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-1.5">
@@ -537,11 +603,15 @@ export function CalendarView() {
               );
             })}
             {monthDays.map((day,i)=>{
-              const dayTasks=getTasksForDay(day), isToday=isSameDay(day,TODAY), isCurMonth=isSameMonth(day,currentDate);
+              const dayTs = day.getTime();
+              const dayTasks = getMonthDayTasks(day);
+              const isToday=isSameDay(day,TODAY), isCurMonth=isSameMonth(day,currentDate);
               const isWknd = day.getDay()===0||day.getDay()===6;
               const isScrollAnchor = isSameDay(day, todayWeekMonday);
               return (
-                <div key={i} ref={isScrollAnchor ? weekRowRef : undefined} onDragOver={e=>e.preventDefault()} onDrop={e=>handleDrop(e,day)} onClick={()=>openNew(day)}
+                <div key={i} ref={isScrollAnchor ? weekRowRef : undefined}
+                  onDragOver={e=>e.preventDefault()} onDrop={e=>handleDrop(e,day)}
+                  onClick={()=>{ setSelectedCal(null); openNew(day); }}
                   className={`border-b border-r border-slate-200 dark:border-slate-700 flex flex-col cursor-pointer group transition-colors
                     ${isWknd
                       ? 'p-1 min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
@@ -558,7 +628,20 @@ export function CalendarView() {
                     {dayTasks.length>0&&<span className={`font-black text-slate-400 ${isWknd?'text-[7px]':'text-[9px]'}`}>{dayTasks.length}</span>}
                   </div>
                   <div className="flex-1 space-y-px overflow-hidden">
-                    {dayTasks.map(t=><MonthTaskDot key={t.id} task={t}/>)}
+                    {dayTasks.map(t=>(
+                      <div key={t.id}
+                        onDragOver={e=>{ e.preventDefault(); e.stopPropagation(); setDragOverInfo({dayTs, taskId: t.id}); }}
+                        onDragLeave={e=>e.stopPropagation()}
+                        onDrop={e=>handleMonthTaskDrop(e, day, t.id)}
+                        onClick={e=>e.stopPropagation()}>
+                        {dragOverInfo?.dayTs===dayTs && dragOverInfo.taskId===t.id && (
+                          <div className="h-0.5 bg-indigo-500 rounded-full"/>
+                        )}
+                        <MonthTaskDot task={t} dayTs={dayTs}
+                          isSelected={selectedCal?.taskId===t.id}
+                          onSelect={(x,y)=>setSelectedCal(prev => prev?.taskId===t.id ? null : {taskId:t.id, task:t, x, y})}/>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );

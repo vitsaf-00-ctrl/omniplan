@@ -145,6 +145,7 @@ export function ProjectBoard() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ctx, setCtx] = useState<Ctx | null>(null);
+  const [mobileTab, setMobileTab] = useState<TaskStatus>('todo');
 
   // Column order state — each key is a TaskStatus
   const [colOrder, setColOrder] = useState<Record<string, string[]>>({
@@ -248,47 +249,71 @@ export function ProjectBoard() {
         </div>
 
         {view === 'board' && (
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex-1 overflow-x-auto overflow-y-hidden">
-              <div className="flex gap-3 h-full" style={{minWidth:'780px'}}>
-                {cols.map(col => (
-                  <div key={col.status} className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto min-h-0 min-w-[240px]">
-                    <div className="flex items-center justify-between mb-3 px-1 shrink-0">
-                      <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">{col.title}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${col.badge}`}>{col.tasks.length}</span>
-                    </div>
-                    <Droppable droppableId={col.status}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`flex-1 space-y-2 min-h-[40px] rounded-lg transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}
-                        >
-                          {col.tasks.map((t, i) => (
-                            <Draggable key={t.id} draggableId={t.id} index={i}>
-                              {(prov, snap) => (
-                                <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
-                                  className={`group ${snap.isDragging ? 'opacity-80 shadow-xl' : ''}`}>
-                                  <TaskCard
-                                    task={t}
-                                    isSelected={selectedId === t.id}
-                                    onSelect={() => setSelectedId(t.id === selectedId ? null : t.id)}
-                                    onDoubleClick={() => edit(t)}
-                                    onContextMenu={e => setCtx({ x: e.clientX, y: e.clientY, task: t })}
-                                  />
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </div>
-                ))}
-              </div>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Mobile tabs */}
+            <div className="flex md:hidden shrink-0 border-b border-slate-200 dark:border-slate-700 mb-2">
+              {cols.map(col => (
+                <button key={col.status} onClick={() => setMobileTab(col.status)}
+                  className={`flex-1 py-2 text-[11px] font-black uppercase tracking-wide flex items-center justify-center gap-1.5 transition-all
+                    ${mobileTab === col.status ? 'border-b-2 border-indigo-600 text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}>
+                  {col.title}
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${mobileTab === col.status ? 'bg-indigo-100 text-indigo-700' : col.badge}`}>
+                    {col.tasks.length}
+                  </span>
+                </button>
+              ))}
             </div>
-          </DragDropContext>
+            {/* Mobile single column */}
+            <div className="flex-1 md:hidden overflow-y-auto space-y-2">
+              {cols.find(c => c.status === mobileTab)!.tasks.map(t => (
+                <TaskCard key={t.id} task={t}
+                  isSelected={selectedId === t.id}
+                  onSelect={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                  onDoubleClick={() => edit(t)}
+                  onContextMenu={e => setCtx({ x: e.clientX, y: e.clientY, task: t })}/>
+              ))}
+              {cols.find(c => c.status === mobileTab)!.tasks.length === 0 && (
+                <div className="text-center py-12 text-slate-400 text-sm font-semibold">Задач немає</div>
+              )}
+            </div>
+            {/* Desktop kanban with DnD */}
+            <DragDropContext onDragEnd={onDragEnd}>
+              <div className="hidden md:flex flex-1 overflow-x-auto overflow-y-hidden">
+                <div className="flex gap-3 h-full" style={{minWidth:'780px'}}>
+                  {cols.map(col => (
+                    <div key={col.status} className="flex-1 bg-slate-100/50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-y-auto min-h-0 min-w-[240px]">
+                      <div className="flex items-center justify-between mb-3 px-1 shrink-0">
+                        <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider">{col.title}</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${col.badge}`}>{col.tasks.length}</span>
+                      </div>
+                      <Droppable droppableId={col.status}>
+                        {(provided, snapshot) => (
+                          <div ref={provided.innerRef} {...provided.droppableProps}
+                            className={`flex-1 space-y-2 min-h-[40px] rounded-lg transition-colors ${snapshot.isDraggingOver ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                            {col.tasks.map((t, i) => (
+                              <Draggable key={t.id} draggableId={t.id} index={i}>
+                                {(prov, snap) => (
+                                  <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
+                                    className={`group ${snap.isDragging ? 'opacity-80 shadow-xl' : ''}`}>
+                                    <TaskCard task={t}
+                                      isSelected={selectedId === t.id}
+                                      onSelect={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                                      onDoubleClick={() => edit(t)}
+                                      onContextMenu={e => setCtx({ x: e.clientX, y: e.clientY, task: t })}/>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </DragDropContext>
+          </div>
         )}
 
         {view === 'list' && (
