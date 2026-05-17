@@ -233,14 +233,13 @@ export function MyTasks() {
             </button>
           ))}
         </div>
-        <div className="flex gap-0.5 bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
-          {(['all','high','medium','low'] as const).map(p => (
-            <button key={p} onClick={() => setPriorityFilter(p)}
-              className={`px-2 py-1.5 rounded-md text-[9px] font-bold uppercase tracking-wider transition-colors ${priorityFilter === p ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500'}`}>
-              {p === 'all' ? 'Всі' : p === 'high' ? '🔴' : p === 'medium' ? '🟡' : '🔵'}
-            </button>
-          ))}
-        </div>
+        <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value as Priority | 'all')}
+          className="text-xs font-bold text-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 focus:outline-none">
+          <option value="all">Всі пріоритети</option>
+          <option value="high">Високий</option>
+          <option value="medium">Середній</option>
+          <option value="low">Низький</option>
+        </select>
         {!activeProjectFilter && (
           <select value={projectFilter} onChange={e => setProjectFilter(e.target.value)}
             className="text-xs font-bold text-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 focus:outline-none">
