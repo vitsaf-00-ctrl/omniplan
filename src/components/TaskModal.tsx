@@ -155,18 +155,20 @@ export function TaskModal() {
               <input type="date" value={date} onChange={e=>setDate(e.target.value)} disabled={someday}
                 className="w-full text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none disabled:opacity-40"/>
             </div>
-            <div>
+          </div>
+          <div className="flex gap-2">
+            <div className="w-2/5">
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Час задачі</label>
               <input type="time" value={taskTime} onChange={e=>setTaskTime(e.target.value)}
                 className="w-full text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
             </div>
-            <div>
+            <div className="flex-1">
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Пріоритет</label>
               <div className="flex gap-1">
                 {([['high','🔴','Високий'],['medium','🟡','Середній'],['low','🔵','Низький']] as [Priority,string,string][]).map(([p,emoji,label])=>(
                   <button key={p} type="button" onClick={()=>setPriority(priority===p?null:p)}
                     className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1 ${priority===p?p==='high'?'bg-red-100 border-red-400 text-red-700':p==='medium'?'bg-amber-100 border-amber-400 text-amber-700':'bg-blue-100 border-blue-400 text-blue-700':'border-slate-200 dark:border-slate-600 text-slate-400 hover:border-slate-300'}`}>
-                    <span>{emoji}</span><span className="hidden sm:inline">{label}</span>
+                    <span>{emoji}</span><span>{label}</span>
                   </button>
                 ))}
               </div>
