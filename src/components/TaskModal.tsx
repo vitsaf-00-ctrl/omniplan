@@ -15,6 +15,7 @@ export function TaskModal() {
   const [someday, setSomeday] = useState(false);
   const [notes, setNotes] = useState('');
   const [recurring, setRecurring] = useState(false);
+  const [recurringType, setRecurringType] = useState<'daily'|'weekdays'|'weekly'|'monthly'>('weekly');
   const [reminder, setReminder] = useState(false);
   const [reminderTime, setReminderTime] = useState('09:00');
   const [gcal, setGcal] = useState(false);
@@ -28,14 +29,14 @@ export function TaskModal() {
     if (editingTask) {
       setTitle(editingTask.title); setProject(editingTask.project); setStatus(editingTask.status);
       setDate(format(new Date(editingTask.date),'yyyy-MM-dd')); setNotes(editingTask.notes||'');
-      setRecurring(editingTask.recurring||false); setReminder(editingTask.reminderEnabled||false);
+      setRecurring(editingTask.recurring||false); setRecurringType((editingTask as any).recurringType||'weekly'); setReminder(editingTask.reminderEnabled||false);
       setReminderTime(editingTask.reminderTime||'09:00'); setGcal(editingTask.googleCalendarSync||false);
       setSomeday(editingTask.someday||false); setPriority(editingTask.priority||null);
       setTaskTime(editingTask.time||''); setLocalSubtasks([]);
     } else {
       setTitle(''); setProject(PROJECTS[0].name); setStatus('todo');
       setDate(format(selectedDate||new Date(),'yyyy-MM-dd'));
-      setNotes(''); setRecurring(false); setReminder(false); setReminderTime('09:00'); setGcal(false); setSomeday(false);
+      setNotes(''); setRecurring(false); setRecurringType('weekly'); setReminder(false); setReminderTime('09:00'); setGcal(false); setSomeday(false);
       setPriority(null); setTaskTime(''); setLocalSubtasks([]);
     }
     setNewSubtask('');
@@ -93,7 +94,7 @@ export function TaskModal() {
       title:title.trim(), project, status,
       date: new Date(date+'T00:00:00'),
       tagColor: getProjectColor(project),
-      notes:notes.trim(), recurring, someday,
+      notes:notes.trim(), recurring, recurringType, someday,
       reminderEnabled:reminder, reminderTime, googleCalendarSync:gcal,
       priority: priority || undefined, time: taskTime || undefined,
     };
@@ -221,13 +222,27 @@ export function TaskModal() {
           )}
 
           {/* Recurring */}
-          <div onClick={()=>setRecurring(!recurring)}
-            className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${recurring?'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20':'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
-            <Repeat className={`w-4 h-4 ${recurring?'text-indigo-500':'text-slate-400'}`}/>
-            <p className={`text-xs font-bold flex-1 ${recurring?'text-indigo-700 dark:text-indigo-400':'text-slate-500'}`}>Повторюване щотижня</p>
-            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${recurring?'border-indigo-500 bg-indigo-500':'border-slate-300'}`}>
-              {recurring&&<div className="w-1.5 h-1.5 rounded-full bg-white"/>}
+          <div>
+            <div onClick={()=>setRecurring(!recurring)}
+              className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${recurring?'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/20':'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
+              <Repeat className={`w-4 h-4 ${recurring?'text-indigo-500':'text-slate-400'}`}/>
+              <p className={`text-xs font-bold flex-1 ${recurring?'text-indigo-700 dark:text-indigo-400':'text-slate-500'}`}>
+                {recurring ? {daily:'Щодня',weekdays:'По буднях',weekly:'Щотижня (цей день)',monthly:'Щомісяця (це число)'}[recurringType] : 'Повторення'}
+              </p>
+              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${recurring?'border-indigo-500 bg-indigo-500':'border-slate-300'}`}>
+                {recurring&&<div className="w-1.5 h-1.5 rounded-full bg-white"/>}
+              </div>
             </div>
+            {recurring && (
+              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                {([['daily','🔁 Щодня'],['weekdays','📅 По буднях'],['weekly','📆 Щотижня'],['monthly','🗓 Щомісяця']] as const).map(([v,l])=>(
+                  <button key={v} type="button" onClick={()=>setRecurringType(v)}
+                    className={`py-1.5 rounded-lg text-[11px] font-bold transition-all border ${recurringType===v?'bg-indigo-600 text-white border-indigo-600':'bg-slate-50 dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-600 hover:border-indigo-300'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Subtasks */}

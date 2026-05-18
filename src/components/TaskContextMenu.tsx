@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { useTaskStore, Task } from '../store/useTaskStore';
+import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
 
 const TOMORROW = new Date(Date.now() + 86400000);
 
@@ -12,12 +12,26 @@ interface Props {
 }
 
 export function TaskContextMenu({ x, y, task, onClose }: Props) {
-  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId } = useAppStore();
-  const { moveTask, moveTaskToDate, duplicateTask, deleteTask } = useTaskStore();
+  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate } = useAppStore();
+  const { moveTask, moveTaskToDate, duplicateTask, deleteTask, updateTask } = useTaskStore();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
 
   const left = Math.min(x, window.innerWidth - 215);
-  const top = Math.min(y, window.innerHeight - 280);
+  const top = Math.min(y, window.innerHeight - 380);
+
+  const statuses: { v: TaskStatus; l: string; emoji: string }[] = [
+    { v: 'todo', l: 'Заплановано', emoji: '⬜' },
+    { v: 'in_progress', l: 'В процесі', emoji: '🔄' },
+    { v: 'done', l: 'Готово', emoji: '✅' },
+  ];
+
+  const handleAddTask = () => {
+    setSelectedDate(new Date(task.date));
+    setEditingTask(null);
+    setTaskModalOpen(true);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-[200]" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
@@ -43,11 +57,41 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
         </button>
 
         <button
-          onClick={() => { moveTask(task.id, task.status === 'done' ? 'todo' : 'done'); onClose(); }}
+          onClick={handleAddTask}
           className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium"
         >
-          {task.status === 'done' ? '↩️ Скасувати виконання' : '✅ Позначити як виконано'}
+          ➕ Додати задачу на цей день
         </button>
+
+        <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
+
+        {/* Status submenu */}
+        <button
+          onClick={() => setShowStatus(!showStatus)}
+          className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium flex items-center justify-between"
+        >
+          <span>🏷 Змінити статус</span>
+          <span className="text-slate-400">{showStatus ? '▲' : '▼'}</span>
+        </button>
+
+        {showStatus && (
+          <div className="bg-slate-50 dark:bg-slate-700/50 border-t border-slate-100 dark:border-slate-700">
+            {statuses.map(s => (
+              <button
+                key={s.v}
+                onClick={() => { updateTask(task.id, { status: s.v }); onClose(); }}
+                className={`w-full text-left px-5 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 font-medium flex items-center gap-2
+                  ${task.status === s.v ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}
+              >
+                <span>{s.emoji}</span>
+                <span>{s.l}</span>
+                {task.status === s.v && <span className="ml-auto text-indigo-500">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
 
         <button
           onClick={() => { duplicateTask(task.id); onClose(); }}
