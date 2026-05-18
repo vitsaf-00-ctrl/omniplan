@@ -229,9 +229,7 @@ export function TaskModal() {
               <p className={`text-xs font-bold flex-1 ${recurring?'text-indigo-700 dark:text-indigo-400':'text-slate-500'}`}>
                 {recurring ? {daily:'Щодня',weekdays:'По буднях',weekly:'Щотижня (цей день)',monthly:'Щомісяця (це число)'}[recurringType] : 'Повторення'}
               </p>
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${recurring?'border-indigo-500 bg-indigo-500':'border-slate-300'}`}>
-                {recurring&&<div className="w-1.5 h-1.5 rounded-full bg-white"/>}
-              </div>
+              <span className={`text-slate-400 text-xs transition-transform ${recurring ? 'rotate-180' : ''}`}>▼</span>
             </div>
             {recurring && (
               <div className="grid grid-cols-2 gap-1.5 mt-2">
