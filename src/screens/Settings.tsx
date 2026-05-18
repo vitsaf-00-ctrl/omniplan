@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { User, Palette, Bell, Link, Shield, Sun, Moon, Send, Mail, Check, Eye, EyeOff, Calendar, Slack, Chrome, Users, X, Clock } from 'lucide-react';
+import { User, Palette, Bell, Link, Shield, Sun, Moon, Send, Mail, Check, Eye, EyeOff, Calendar, Slack, Chrome, Users, X, Clock, Wrench } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
 import {
   sendInvite, subscribeToSentInvites, subscribeToReceivedInvites,
   respondToInvite, type Invite,
 } from '../lib/taskFirestore';
+import { collection, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { getAuth } from 'firebase/auth';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
-type Tab = 'profile' | 'appearance' | 'notifications' | 'integrations' | 'security' | 'team';
+type Tab = 'profile' | 'appearance' | 'notifications' | 'integrations' | 'security' | 'team' | 'maintenance';
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
@@ -84,7 +87,7 @@ function ProfileTab() {
 function AppearanceTab() {
   const { theme, toggleTheme } = useAppStore();
   const [accent, setAccent] = useState<'blue' | 'green' | 'orange' | 'purple'>('blue');
-  const [fontSize, setFontSize] = useState(1); // 0=small 1=medium 2=large
+  const [fontSize, setFontSize] = useState(1);
   const [density, setDensity] = useState<'compact' | 'standard' | 'relaxed'>('standard');
 
   const accents = [
@@ -96,7 +99,6 @@ function AppearanceTab() {
 
   return (
     <div className="space-y-5">
-      {/* Theme */}
       <div>
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Тема</label>
         <div className="grid grid-cols-2 gap-2">
@@ -115,7 +117,6 @@ function AppearanceTab() {
         </div>
       </div>
 
-      {/* Accent color */}
       <div>
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Колір акценту</label>
         <div className="grid grid-cols-2 gap-2">
@@ -130,7 +131,6 @@ function AppearanceTab() {
         </div>
       </div>
 
-      {/* Font size */}
       <div>
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">
           Розмір шрифту — <span className="text-indigo-600">{['Малий', 'Середній', 'Великий'][fontSize]}</span>
@@ -142,7 +142,6 @@ function AppearanceTab() {
         </div>
       </div>
 
-      {/* Density */}
       <div>
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Щільність</label>
         <div className="flex gap-2">
@@ -198,7 +197,6 @@ function NotificationsTab() {
         </div>
       )}
 
-      {/* Telegram */}
       <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -288,7 +286,6 @@ function SecurityTab() {
 
   return (
     <div className="space-y-5">
-      {/* Change password */}
       <div>
         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Зміна паролю</h4>
         <div className="space-y-3">
@@ -322,7 +319,6 @@ function SecurityTab() {
         </div>
       </div>
 
-      {/* Active sessions */}
       <div>
         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Активні сесії</h4>
         <div className="space-y-2">
@@ -382,7 +378,6 @@ function TeamTab() {
 
   return (
     <div className="space-y-6">
-      {/* Invite form */}
       <div>
         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Запросити учасника</h4>
         <div className="flex gap-2">
@@ -400,7 +395,6 @@ function TeamTab() {
         <p className="text-[10px] text-slate-400 mt-2">Запрошена особа отримає доступ до ваших спільних проєктів.</p>
       </div>
 
-      {/* Pending received invites */}
       {receivedInvites.length > 0 && (
         <div>
           <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Запрошення до вас</h4>
@@ -430,7 +424,6 @@ function TeamTab() {
         </div>
       )}
 
-      {/* Sent invites */}
       <div>
         <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
           Надіслані запрошення {sentInvites.length > 0 && `(${sentInvites.length})`}
@@ -469,6 +462,87 @@ function TeamTab() {
   );
 }
 
+function MaintenanceTab() {
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const INVALID_DATE_STRINGS = ['2026-05-17', '1970-01-01'];
+
+  const isInvalidDate = (date: any): boolean => {
+    if (!date) return true;
+    const ms = date?.toMillis ? date.toMillis() : (date?.seconds ?? 0) * 1000;
+    const d = new Date(ms);
+    const year = d.getFullYear();
+    const isoStr = d.toISOString().slice(0, 10);
+    if (year <= 1970) return true;
+    if (INVALID_DATE_STRINGS.includes(isoStr)) return true;
+    return false;
+  };
+
+  const cleanInvalidTasks = async () => {
+    const auth = getAuth();
+    if (!auth.currentUser) return;
+    setIsCleaning(true);
+    setResult(null);
+    try {
+      const tasksRef = collection(db, 'users', auth.currentUser.uid, 'tasks');
+      const snapshot = await getDocs(tasksRef);
+      const invalidIds: string[] = [];
+
+      snapshot.forEach((docSnap) => {
+        if (isInvalidDate(docSnap.data().date)) {
+          invalidIds.push(docSnap.id);
+        }
+      });
+
+      for (let i = 0; i < invalidIds.length; i += 500) {
+        const batch = writeBatch(db);
+        invalidIds.slice(i, i + 500).forEach(id => batch.delete(doc(tasksRef, id)));
+        await batch.commit();
+      }
+
+      setResult(invalidIds.length > 0
+        ? `✅ Видалено ${invalidIds.length} задач з некоректною датою.`
+        : '✅ Некоректних задач не знайдено.');
+    } catch (e) {
+      console.error(e);
+      setResult('❌ Помилка. Перевір консоль.');
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-3">
+        <div>
+          <p className="text-sm font-bold text-slate-800 dark:text-white">Очистити задачі з некоректною датою</p>
+          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+            Видаляє задачі з датами:<br/>
+            • <span className="font-mono">1970-01-01</span> — помилка при збереженні<br/>
+            • <span className="font-mono">17.05.2026</span> — помилка при імпорті<br/>
+            Дію не можна скасувати.
+          </p>
+        </div>
+        <button
+          onClick={cleanInvalidTasks}
+          disabled={isCleaning}
+          className="w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isCleaning
+            ? <><div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"/> Очищення...</>
+            : '🗑 Видалити некоректні задачі'}
+        </button>
+        {result && (
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg px-3 py-2">
+            {result}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: 'profile', label: 'Профіль', icon: User },
   { id: 'appearance', label: 'Вигляд', icon: Palette },
@@ -476,6 +550,7 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: 'integrations', label: 'Інтеграції', icon: Link },
   { id: 'security', label: 'Безпека', icon: Shield },
   { id: 'team', label: 'Команда', icon: Users },
+  { id: 'maintenance', label: 'Технічне', icon: Wrench },
 ];
 
 export function Settings() {
@@ -483,9 +558,7 @@ export function Settings() {
 
   return (
     <div className="flex flex-col md:flex-row h-full gap-4 overflow-hidden">
-      {/* Tabs sidebar */}
       <div className="shrink-0 md:w-44">
-        {/* Mobile: horizontal scroll tabs */}
         <div className="flex gap-1 overflow-x-auto pb-1 md:hidden">
           {TABS.map(t => {
             const Icon = t.icon;
@@ -498,7 +571,6 @@ export function Settings() {
             );
           })}
         </div>
-        {/* Desktop: vertical tabs */}
         <div className="hidden md:flex flex-col gap-0.5">
           {TABS.map(t => {
             const Icon = t.icon;
@@ -514,7 +586,6 @@ export function Settings() {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-lg mx-auto md:mx-0">
           <h3 className="text-sm font-black text-slate-800 dark:text-white mb-4">
@@ -526,6 +597,7 @@ export function Settings() {
           {active === 'integrations' && <IntegrationsTab/>}
           {active === 'security' && <SecurityTab/>}
           {active === 'team' && <TeamTab/>}
+          {active === 'maintenance' && <MaintenanceTab/>}
         </div>
       </div>
     </div>
