@@ -250,7 +250,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   getTodayTasks: () => {
-    const today = new Date(2026,4,15);
+    const today = new Date();
     return get().getTasksForDay(today);
   },
 
