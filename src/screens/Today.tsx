@@ -7,7 +7,7 @@ import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
 
-const TODAY = new Date(2026, 4, 15);
+const TODAY = new Date();
 
 const TAG: Record<string,string> = {
   blue:'bg-blue-100 text-blue-700', indigo:'bg-indigo-100 text-indigo-700',
