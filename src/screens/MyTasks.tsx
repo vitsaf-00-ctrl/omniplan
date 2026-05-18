@@ -125,7 +125,7 @@ function SomedaySection() {
               <p className="flex-1 text-sm font-semibold text-slate-800 dark:text-white truncate">{t.title}</p>
               <span className={`text-[10px] px-2 py-0.5 rounded border font-bold shrink-0 ${TAG[t.tagColor] || TAG.slate}`}>{t.project}</span>
               <button
-                onClick={e => { e.stopPropagation(); moveTaskToDate(t.id, new Date(2026,4,15)); }}
+                onClick={e => { e.stopPropagation(); moveTaskToDate(t.id, new Date()); }}
                 className="opacity-0 group-hover:opacity-100 text-[9px] bg-indigo-600 text-white px-2 py-1 rounded-lg font-bold uppercase transition-all">
                 Сьогодні
               </button>

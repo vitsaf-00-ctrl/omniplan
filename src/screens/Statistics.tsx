@@ -5,7 +5,7 @@ import { exportToExcel, exportToPDF } from '../utils/export';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
-const TODAY = new Date(2026, 4, 15);
+const TODAY = new Date();
 
 const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6','#ec4899','#14b8a6'];
 

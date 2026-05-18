@@ -11,7 +11,7 @@ export function TaskModal() {
   const [title, setTitle] = useState('');
   const [project, setProject] = useState(PROJECTS[0].name);
   const [status, setStatus] = useState<TaskStatus>('todo');
-  const [date, setDate] = useState(format(new Date(2026,4,15),'yyyy-MM-dd'));
+  const [date, setDate] = useState(format(new Date(),'yyyy-MM-dd'));
   const [someday, setSomeday] = useState(false);
   const [notes, setNotes] = useState('');
   const [recurring, setRecurring] = useState(false);
@@ -34,7 +34,7 @@ export function TaskModal() {
       setTaskTime(editingTask.time||''); setLocalSubtasks([]);
     } else {
       setTitle(''); setProject(PROJECTS[0].name); setStatus('todo');
-      setDate(format(selectedDate||new Date(2026,4,15),'yyyy-MM-dd'));
+      setDate(format(selectedDate||new Date(),'yyyy-MM-dd'));
       setNotes(''); setRecurring(false); setReminder(false); setReminderTime('09:00'); setGcal(false); setSomeday(false);
       setPriority(null); setTaskTime(''); setLocalSubtasks([]);
     }

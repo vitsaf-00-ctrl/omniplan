@@ -256,7 +256,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   getWeekStats: () => {
     const { tasks } = get();
-    const now = new Date(2026,4,15);
+    const now = new Date();
     const ws = new Date(now); ws.setDate(now.getDate()-((now.getDay()+6)%7)); ws.setHours(0,0,0,0);
     const we = new Date(ws); we.setDate(ws.getDate()+6);
     const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);

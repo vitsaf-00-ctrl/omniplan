@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task } from '../store/useTaskStore';
 
-const TOMORROW = new Date(2026, 4, 16);
+const TOMORROW = new Date(Date.now() + 86400000);
 
 interface Props {
   x: number;
