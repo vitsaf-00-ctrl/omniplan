@@ -12,7 +12,8 @@ interface Props {
 }
 
 export function TaskContextMenu({ x, y, task, onClose }: Props) {
-  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate, setClipboard, clipboardTaskId } = useAppStore();
+  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode } = useAppStore();
+  const { duplicateTask: dup, moveTaskToDate } = useTaskStore();
   const { moveTask, moveTaskToDate, duplicateTask, deleteTask, updateTask } = useTaskStore();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
@@ -99,6 +100,20 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
         >
           📋 Копіювати (Ctrl+C)
         </button>
+
+        {clipboardTaskId && (
+          <button
+            onClick={() => {
+              if (clipboardMode === 'copy') dup(clipboardTaskId);
+              else moveTaskToDate(clipboardTaskId, new Date(task.date));
+              clearClipboard();
+              onClose();
+            }}
+            className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-indigo-600 dark:text-indigo-400 font-medium"
+          >
+            📥 Вставити на цю дату
+          </button>
+        )}
 
         <button
           onClick={() => { duplicateTask(task.id); onClose(); }}
