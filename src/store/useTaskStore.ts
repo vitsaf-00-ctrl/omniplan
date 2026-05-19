@@ -76,6 +76,8 @@ interface TaskStore {
   setUserId: (uid: string | null) => void;
   setTasks: (tasks: Task[]) => void;
   setFirestoreLoaded: (v: boolean) => void;
+  setProjects: (projects: Project[]) => void;
+  deleteProject: (id: string) => void;
 
   addTask: (task: Omit<Task,'id'|'createdAt'>) => string;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -115,6 +117,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   setUserId: (uid) => set({ userId: uid }),
   setTasks: (tasks) => set({ tasks, isFirestoreLoaded: true }),
   setFirestoreLoaded: (v) => set({ isFirestoreLoaded: v }),
+  setProjects: (projects) => set({ projects }),
+  deleteProject: (id) => set(s => ({ projects: s.projects.filter(p => p.id !== id) })),
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   addTask: (task) => {

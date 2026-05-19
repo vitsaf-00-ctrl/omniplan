@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task } from '../store/useTaskStore';
-import { subscribeToUserTasks } from '../lib/taskFirestore';
+import { subscribeToUserTasks, subscribeToUserProjects, initUserProjects } from '../lib/taskFirestore';
 import { collection, getDocs, setDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { randomUUID } from 'crypto';
@@ -119,6 +119,14 @@ export function FirestoreSync() {
 
     setUserId(user.uid);
 
+    // Init and subscribe to projects
+    initUserProjects(user.uid).then(projects => {
+      useTaskStore.getState().setProjects(projects);
+    });
+    const unsubProjects = subscribeToUserProjects(user.uid, (projects) => {
+      useTaskStore.getState().setProjects(projects);
+    });
+
     unsubRef.current = subscribeToUserTasks(
       user.uid,
       (tasks) => {
@@ -134,6 +142,7 @@ export function FirestoreSync() {
 
     return () => {
       if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+      unsubProjects();
     };
   }, [user?.uid]);
 

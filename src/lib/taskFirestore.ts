@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import {
   collection, doc, setDoc, deleteDoc, onSnapshot,
-  query, orderBy, where, Timestamp,
+  query, orderBy, where, Timestamp, getDocs,
 } from 'firebase/firestore';
 import type { Task } from '../store/useTaskStore';
 
@@ -167,4 +167,65 @@ export async function respondToInvite(inviteId: string, status: 'accepted' | 're
   } catch (e) {
     console.error('[Firestore] respondToInvite', e);
   }
+}
+
+// ── Projects ────────────────────────────────────────────────────────────────
+export interface FirestoreProject {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: Date;
+}
+
+const DEFAULT_PROJECTS = [
+  { id: 'ai-officer', name: 'AI officer', color: 'indigo' },
+  { id: 'dis', name: 'ДІС', color: 'blue' },
+  { id: 'haifom', name: 'Хайфом', color: 'blue' },
+  { id: 'acat', name: 'ACAT', color: 'emerald' },
+  { id: 'treid', name: 'Трейд', color: 'purple' },
+  { id: 'orli', name: 'Орлі', color: 'amber' },
+  { id: 'yas', name: 'ЯС', color: 'rose' },
+  { id: 'kabin', name: 'Кабін', color: 'slate' },
+  { id: 'moye', name: 'Моє', color: 'emerald' },
+  { id: 'navchannia', name: 'Навчання', color: 'emerald' },
+  { id: 'rozrobka', name: 'Розробка', color: 'indigo' },
+];
+
+export async function initUserProjects(uid: string): Promise<FirestoreProject[]> {
+  const ref = collection(db, 'users', uid, 'projects');
+  const snap = await getDocs(ref);
+  if (!snap.empty) {
+    return snap.docs.map(d => ({ ...d.data(), id: d.id, createdAt: d.data().createdAt?.toDate() || new Date() } as FirestoreProject));
+  }
+  // Створюємо дефолтні проекти для нового користувача
+  const projects: FirestoreProject[] = [];
+  for (const p of DEFAULT_PROJECTS) {
+    const createdAt = Timestamp.now();
+    await setDoc(doc(ref, p.id), { ...p, createdAt });
+    projects.push({ ...p, createdAt: createdAt.toDate() });
+  }
+  return projects;
+}
+
+export async function addUserProject(uid: string, name: string, color: string): Promise<FirestoreProject> {
+  const id = `proj_${Date.now()}`;
+  const ref = collection(db, 'users', uid, 'projects');
+  const createdAt = Timestamp.now();
+  await setDoc(doc(ref, id), { id, name, color, createdAt });
+  return { id, name, color, createdAt: createdAt.toDate() };
+}
+
+export async function deleteUserProject(uid: string, projectId: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', uid, 'projects', projectId));
+}
+
+export function subscribeToUserProjects(uid: string, onUpdate: (projects: FirestoreProject[]) => void): () => void {
+  const ref = collection(db, 'users', uid, 'projects');
+  return onSnapshot(ref, snap => {
+    const projects = snap.docs.map(d => ({
+      ...d.data(), id: d.id,
+      createdAt: d.data().createdAt?.toDate() || new Date()
+    } as FirestoreProject));
+    onUpdate(projects.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()));
+  });
 }
