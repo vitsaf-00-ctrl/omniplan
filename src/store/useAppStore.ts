@@ -15,6 +15,7 @@ interface AppState {
   editingTask: Task | null;
   selectedDate?: Date;
   clipboardTaskId: string | null;
+  selectedTaskId: string | null;
   clipboardMode: 'copy' | 'cut' | null;
   focusTaskId: string | null;
 
@@ -29,6 +30,7 @@ interface AppState {
   setSelectedDate: (d?: Date) => void;
   setClipboard: (id: string, mode: 'copy'|'cut') => void;
   clearClipboard: () => void;
+  setSelectedTaskId: (id: string | null) => void;
   setFocusTaskId: (id: string | null) => void;
 }
 
@@ -36,7 +38,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   user: null, isAuthLoaded: false, isMobileMenuOpen: false,
   activeView: 'today', theme: 'light',
   isTaskModalOpen: false, editingTask: null, selectedDate: undefined,
-  clipboardTaskId: null, clipboardMode: null, focusTaskId: null,
+  clipboardTaskId: null, clipboardMode: null, focusTaskId: null, selectedTaskId: null,
 
   setUser: u => set({ user: u }),
   setAuthLoaded: v => set({ isAuthLoaded: v }),
@@ -53,5 +55,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedDate: d => set({ selectedDate: d }),
   setClipboard: (id, mode) => set({ clipboardTaskId: id, clipboardMode: mode }),
   clearClipboard: () => set({ clipboardTaskId: null, clipboardMode: null }),
+  setSelectedTaskId: (id) => set({ selectedTaskId: id }),
   setFocusTaskId: id => set({ focusTaskId: id }),
 }));

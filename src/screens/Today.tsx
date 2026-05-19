@@ -106,8 +106,10 @@ export function Today() {
   const tasks = getTodayTasks();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { setSelectedTaskId } = useAppStore();
   const setSelected = (id: string | null) => {
     setSelectedId(id);
+    setSelectedTaskId(id);
     (window as any).__setKeyboardSelectedId?.(id);
     (window as any).__notifySelectedId = setSelectedId;
   };

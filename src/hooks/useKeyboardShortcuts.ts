@@ -3,16 +3,18 @@ import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
 
 export function useKeyboardShortcuts() {
-  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode } = useAppStore();
+  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
   const selectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     (window as any).__setKeyboardSelectedId = (id: string | null) => {
       selectedIdRef.current = id;
+      setSelectedTaskId(id);
     };
     (window as any).__notifySelectedId = (id: string | null) => {
       selectedIdRef.current = id;
+      setSelectedTaskId(id);
     };
     return () => {
       delete (window as any).__setKeyboardSelectedId;
