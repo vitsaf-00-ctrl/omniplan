@@ -16,6 +16,10 @@ service cloud.firestore {
     match /users/{userId}/tasks/{taskId} {
       allow read, write: if isOwner(userId);
     }
+    // ── Personal projects (users/{userId}/projects) ───────────────────────────
+    match /users/{userId}/projects/{projectId} {
+      allow read, write: if isOwner(userId);
+    }
 
     // ── User profile & settings ───────────────────────────────────────────────
     match /users/{userId} {

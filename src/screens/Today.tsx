@@ -47,16 +47,6 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
   };
   const handleTouchEnd = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
 
-  const shortcuts = selectedId ? [
-    { key: 'Enter', label: 'Редагувати' },
-    { key: 'Space', label: 'Виконано' },
-    { key: 'Del', label: 'Видалити' },
-    { key: 'Ctrl+C', label: 'Копіювати' },
-    { key: 'Ctrl+X', label: 'Вирізати' },
-    { key: 'T', label: 'На сьогодні' },
-    { key: 'M', label: 'На завтра' },
-  ] : [{ key: 'N', label: 'Нова задача' }];
-
   return (
     <div>
       <div
