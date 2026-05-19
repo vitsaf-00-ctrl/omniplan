@@ -3,7 +3,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
 
 export function useKeyboardShortcuts() {
-  const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
+  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
   const selectedIdRef = useRef<string | null>(null);
 
@@ -77,21 +77,20 @@ export function useKeyboardShortcuts() {
       // Ctrl+C — копіювати
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault();
-        useAppStore.getState().setClipboard(selectedId, 'copy');
+        setClipboard(selectedId, 'copy');
         return;
       }
 
       // Ctrl+X — вирізати
       if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
         e.preventDefault();
-        useAppStore.getState().setClipboard(selectedId, 'cut');
+        setClipboard(selectedId, 'cut');
         return;
       }
 
       // Ctrl+V — вставити (без дня — дублює на ту ж дату)
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         e.preventDefault();
-        const { clipboardTaskId, clipboardMode, clearClipboard } = useAppStore.getState();
         if (!clipboardTaskId) return;
         duplicateTask(clipboardTaskId);
         if (clipboardMode === 'cut') {
