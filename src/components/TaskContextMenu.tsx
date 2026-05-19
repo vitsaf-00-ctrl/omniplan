@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function TaskContextMenu({ x, y, task, onClose }: Props) {
-  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate } = useAppStore();
+  const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate, setClipboard, clipboardTaskId } = useAppStore();
   const { moveTask, moveTaskToDate, duplicateTask, deleteTask, updateTask } = useTaskStore();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
@@ -94,10 +94,17 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
         <div className="border-t border-slate-100 dark:border-slate-700 my-1" />
 
         <button
+          onClick={() => { setClipboard(task.id, 'copy'); onClose(); }}
+          className={`w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium ${clipboardTaskId === task.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200'}`}
+        >
+          📋 Копіювати (Ctrl+C)
+        </button>
+
+        <button
           onClick={() => { duplicateTask(task.id); onClose(); }}
           className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium"
         >
-          📋 Дублювати
+          🔁 Дублювати
         </button>
 
         <button
