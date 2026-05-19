@@ -101,7 +101,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
 }
 
 export function Today() {
-  const { getTodayTasks, moveTask } = useTaskStore();
+  const { getTodayTasks, moveTask, updateTask } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
   const tasks = getTodayTasks();
 
@@ -165,6 +165,7 @@ export function Today() {
       const [removed] = next.splice(source.index, 1);
       next.splice(destination.index, 0, removed);
       setGroupOrder(prev => ({ ...prev, [key]: next }));
+      next.forEach((id, idx) => updateTask(id, { order: idx }));
     }
   };
 
