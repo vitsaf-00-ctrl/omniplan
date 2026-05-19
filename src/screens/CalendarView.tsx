@@ -200,7 +200,7 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
             )}
           </div>
         ))}
-        <button onClick={()=>{setSelectedDate(day);setEditingTask(null);setTaskModalOpen(true);}}
+        <button onClick={()=>selectDay(day)}
           className="w-full p-3 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:border-indigo-400 hover:text-indigo-600 transition-all text-sm font-semibold flex items-center justify-center gap-2">
           <Plus className="w-4 h-4"/> Додати задачу
         </button>
@@ -262,7 +262,7 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
 
       {/* Add task shortcut */}
       <div className="shrink-0 px-4 py-2 border-b border-slate-100 dark:border-slate-700">
-        <button onClick={() => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); }}
+        <button onClick={() => selectDay(day)}
           className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
           <Plus className="w-3.5 h-3.5"/> Додати задачу
         </button>
@@ -280,7 +280,7 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
             ))}
           </div>
           <div className={`flex-1 relative ${isToday ? 'bg-indigo-50/20 dark:bg-indigo-900/5' : ''}`}
-            onClick={() => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); }}>
+            onClick={() => selectDay(day)}>
             {hours.map(h => (
               <div key={h} className="absolute w-full border-t border-slate-100 dark:border-slate-700/50"
                 style={{top:`${(h - TL_START) * HOUR_PX}px`}}/>
@@ -365,6 +365,7 @@ export function CalendarView() {
 
   const { getTasksForDay, moveTask, moveTaskToDate, copyTaskToDate, activeProjectFilter } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate, clipboardTaskId, clipboardMode, clearClipboard } = useAppStore();
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const { moveTaskToDate: storeMove, copyTaskToDate: storeCopy } = useTaskStore();
 
   const weekStart = startOfWeek(currentDate,{weekStartsOn:1});
@@ -420,7 +421,13 @@ export function CalendarView() {
 
   const handleDrop = (e:React.DragEvent, day:Date) => { e.preventDefault(); const id=e.dataTransfer.getData('taskId'); if(id) storeMove(id,day); setDragOverInfo(null); };
   const handleDayPaste = (day:Date) => { if(clipboardTaskId){clipboardMode==='copy'?storeCopy(clipboardTaskId,day):storeMove(clipboardTaskId,day);clearClipboard();} };
-  const openNew = (day:Date) => { if(clipboardTaskId){handleDayPaste(day);}else{setSelectedDate(day);setEditingTask(null);setTaskModalOpen(true);} };
+  const selectDay = (day:Date) => {
+    const key = day.toISOString().slice(0,10);
+    if(clipboardTaskId){ handleDayPaste(day); return; }
+    setSelectedDay(prev => prev === key ? null : key);
+    setSelectedDate(day);
+  };
+  const openNewForDay = (day:Date) => { setSelectedDate(day); setEditingTask(null); setTaskModalOpen(true); };
 
   const prevLabel = viewMode==='month'
     ? format(currentDate,'LLLL yyyy',{locale:uk})
@@ -556,7 +563,7 @@ export function CalendarView() {
                       <div key={i}
                         className={`border-r border-b border-slate-200 dark:border-slate-700 ${isToday?'bg-indigo-50/50 dark:bg-indigo-900/10':''}`}
                         onDragOver={e=>e.preventDefault()} onDrop={e=>handleDrop(e,day)}>
-                        <div className="p-2 cursor-pointer" onClick={() => openNew(day)}>
+                        <div className="p-2 cursor-pointer" onClick={() => selectDay(day)}>
                           <p className={`text-xs font-black capitalize ${isToday?'text-indigo-600':'text-slate-500 dark:text-slate-400'}`}>{format(day,'EEEE',{locale:uk})}</p>
                           <p className={`text-lg font-black ${isToday?'text-indigo-600':'text-slate-800 dark:text-white'}`}>{format(day,'d')}</p>
                           {dayTasks.length>0&&<p className="text-[9px] text-slate-400">{dayTasks.length} завд.</p>}
@@ -611,7 +618,7 @@ export function CalendarView() {
               return (
                 <div key={i} ref={isScrollAnchor ? weekRowRef : undefined}
                   onDragOver={e=>e.preventDefault()} onDrop={e=>handleDrop(e,day)}
-                  onClick={()=>{ setSelectedCal(null); openNew(day); }}
+                  onClick={()=>{ setSelectedCal(null); selectDay(day); }}
                   className={`border-b border-r border-slate-200 dark:border-slate-700 flex flex-col cursor-pointer group transition-colors
                     ${isWknd
                       ? 'p-1 min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
