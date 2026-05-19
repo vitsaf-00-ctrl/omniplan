@@ -47,6 +47,16 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
   };
   const handleTouchEnd = () => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } };
 
+  const shortcuts = selectedId ? [
+    { key: 'Enter', label: 'Редагувати' },
+    { key: 'Space', label: 'Виконано' },
+    { key: 'Del', label: 'Видалити' },
+    { key: 'Ctrl+C', label: 'Копіювати' },
+    { key: 'Ctrl+X', label: 'Вирізати' },
+    { key: 'T', label: 'На сьогодні' },
+    { key: 'M', label: 'На завтра' },
+  ] : [{ key: 'N', label: 'Нова задача' }];
+
   return (
     <div>
       <div
@@ -106,6 +116,11 @@ export function Today() {
   const tasks = getTodayTasks();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const setSelected = (id: string | null) => {
+    setSelectedId(id);
+    (window as any).__setKeyboardSelectedId?.(id);
+    (window as any).__notifySelectedId = setSelectedId;
+  };
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -239,7 +254,7 @@ export function Today() {
                           <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
                             className={snap.isDragging ? 'opacity-80 shadow-lg' : ''}>
                             <TodayTaskRow task={t} isSelected={selectedId===t.id} isExpanded={expandedIds.has(t.id)}
-                              onSelect={()=>setSelectedId(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
+                              onSelect={()=>setSelected(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
                               onContextMenu={(x,y)=>setCtx({x,y,task:t})} onToggleExpand={()=>toggleExpanded(t.id)}/>
                           </div>
                         )}
@@ -265,7 +280,7 @@ export function Today() {
                           <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
                             className={snap.isDragging ? 'opacity-80 shadow-lg' : ''}>
                             <TodayTaskRow task={t} isSelected={selectedId===t.id} isExpanded={expandedIds.has(t.id)}
-                              onSelect={()=>setSelectedId(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
+                              onSelect={()=>setSelected(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
                               onContextMenu={(x,y)=>setCtx({x,y,task:t})} onToggleExpand={()=>toggleExpanded(t.id)}/>
                           </div>
                         )}
@@ -293,7 +308,7 @@ export function Today() {
                           <div ref={prov.innerRef} {...prov.draggableProps} {...prov.dragHandleProps}
                             className={snap.isDragging ? 'opacity-80 shadow-lg' : ''}>
                             <TodayTaskRow task={t} isSelected={selectedId===t.id} isExpanded={expandedIds.has(t.id)}
-                              onSelect={()=>setSelectedId(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
+                              onSelect={()=>setSelected(t.id===selectedId?null:t.id)} onEdit={()=>openEdit(t)}
                               onContextMenu={(x,y)=>setCtx({x,y,task:t})} onToggleExpand={()=>toggleExpanded(t.id)}/>
                           </div>
                         )}

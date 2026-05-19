@@ -10,9 +10,11 @@ import { Today } from './Today';
 import { Statistics } from './Statistics';
 import { FocusMode } from './FocusMode';
 import { TaskModal } from '../components/TaskModal';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 export function Dashboard() {
   const { activeView } = useAppStore();
+  useKeyboardShortcuts();
 
   // Focus mode is fully standalone — no sidebar, header or layout
   if (activeView === 'focus') return <FocusMode/>;
