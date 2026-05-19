@@ -625,14 +625,25 @@ export function CalendarView() {
                       : 'p-1.5 min-h-[80px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
                     }
                     ${!isCurMonth?'opacity-40':''}
-                    ${isToday?'ring-2 ring-inset ring-indigo-500':''}`}>
+                    ${isToday?'ring-2 ring-inset ring-indigo-500':''}
+                    ${selectedDay===day.toISOString().slice(0,10)?'ring-2 ring-inset ring-blue-400 bg-blue-50/30 dark:bg-blue-900/10':''}`}>
                   <div className="flex justify-between items-center mb-0.5">
                     <span className={`font-bold flex items-center justify-center rounded-full
                       ${isWknd ? 'text-[10px] w-4 h-4' : 'text-xs w-5 h-5'}
                       ${isToday?'bg-indigo-600 text-white':isCurMonth?'text-slate-500 dark:text-slate-300':'text-slate-300'}`}>
                       {format(day,'d')}
                     </span>
-                    {dayTasks.length>0&&<span className={`font-black text-slate-400 ${isWknd?'text-[7px]':'text-[9px]'}`}>{dayTasks.length}</span>}
+                    <div className="flex items-center gap-1">
+                      {dayTasks.length>0&&<span className={`font-black text-slate-400 ${isWknd?'text-[7px]':'text-[9px]'}`}>{dayTasks.length}</span>}
+                      {selectedDay===day.toISOString().slice(0,10)&&(
+                        <button onClick={e=>{e.stopPropagation();openNewForDay(day);}} title="Додати задачу"
+                          className="w-4 h-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">+</button>
+                      )}
+                      {selectedDay===day.toISOString().slice(0,10)&&clipboardTaskId&&(
+                        <button onClick={e=>{e.stopPropagation();handleDayPaste(day);setSelectedDay(null);}} title="Вставити задачу"
+                          className="w-4 h-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">📋</button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex-1 space-y-px overflow-hidden">
                     {dayTasks.map(t=>(
