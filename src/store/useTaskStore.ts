@@ -22,6 +22,7 @@ export interface Task {
   tagColor: TagColor;
   notes?: string;
   recurring?: boolean;
+  order?: number;
   reminderEnabled?: boolean;
   reminderTime?: string;
   googleCalendarSync?: boolean;
@@ -238,6 +239,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       if (!same) return false;
       if (activeProjectFilter && t.project!==activeProjectFilter) return false;
       return true;
+    }).sort((a, b) => {
+      if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+      if (a.order !== undefined) return -1;
+      if (b.order !== undefined) return 1;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
   },
 
