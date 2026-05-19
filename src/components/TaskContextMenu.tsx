@@ -13,8 +13,8 @@ interface Props {
 
 export function TaskContextMenu({ x, y, task, onClose }: Props) {
   const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode } = useAppStore();
-  const { duplicateTask: dup, moveTaskToDate } = useTaskStore();
   const { moveTask, moveTaskToDate, duplicateTask, deleteTask, updateTask } = useTaskStore();
+  const dup = duplicateTask;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
 
