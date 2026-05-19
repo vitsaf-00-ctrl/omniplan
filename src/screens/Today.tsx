@@ -150,7 +150,6 @@ export function Today() {
   };
 
   const onDragEnd = (result: DropResult) => {
-    console.log('DragEnd:', JSON.stringify(result));
     if (!result.destination) return;
     const { source, destination, draggableId } = result;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
@@ -166,8 +165,7 @@ export function Today() {
       const [removed] = next.splice(source.index, 1);
       next.splice(destination.index, 0, removed);
       setGroupOrder(prev => ({ ...prev, [key]: next }));
-      console.log('Saving order:', next);
-      next.forEach((id, idx) => { console.log('Updating', id, 'order:', idx); updateTask(id, { order: idx }); });
+      next.forEach((id, idx) => updateTask(id, { order: idx }));
     }
   };
 
