@@ -150,6 +150,7 @@ export function Today() {
   };
 
   const onDragEnd = (result: DropResult) => {
+    console.log('DragEnd:', JSON.stringify(result));
     if (!result.destination) return;
     const { source, destination, draggableId } = result;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
