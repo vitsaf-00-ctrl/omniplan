@@ -77,29 +77,26 @@ export function useKeyboardShortcuts() {
       // Ctrl+C — копіювати
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault();
-        (window as any).__clipboardTaskId = selectedId;
-        (window as any).__clipboardCut = false;
+        useAppStore.getState().setClipboard(selectedId, 'copy');
         return;
       }
 
       // Ctrl+X — вирізати
       if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
         e.preventDefault();
-        (window as any).__clipboardTaskId = selectedId;
-        (window as any).__clipboardCut = true;
+        useAppStore.getState().setClipboard(selectedId, 'cut');
         return;
       }
 
-      // Ctrl+V — вставити
+      // Ctrl+V — вставити (без дня — дублює на ту ж дату)
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
         e.preventDefault();
-        const clipId = (window as any).__clipboardTaskId;
-        if (!clipId) return;
-        duplicateTask(clipId);
-        if ((window as any).__clipboardCut) {
-          deleteTask(clipId);
-          (window as any).__clipboardTaskId = null;
-          (window as any).__clipboardCut = false;
+        const { clipboardTaskId, clipboardMode, clearClipboard } = useAppStore.getState();
+        if (!clipboardTaskId) return;
+        duplicateTask(clipboardTaskId);
+        if (clipboardMode === 'cut') {
+          deleteTask(clipboardTaskId);
+          clearClipboard();
         }
         return;
       }
