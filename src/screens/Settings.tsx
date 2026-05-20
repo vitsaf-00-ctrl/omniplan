@@ -489,8 +489,8 @@ function MaintenanceTab() {
     return false;
   };
 
-  const [isCleaningDupes, setIsCleaningDupes] = React.useState(false);
-  const [dupeResult, setDupeResult] = React.useState<string | null>(null);
+  const [isCleaningDupes, setIsCleaningDupes] = useState(false);
+  const [dupeResult, setDupeResult] = useState<string | null>(null);
 
   const cleanJuneDuplicates = async () => {
     const auth = getAuth();
