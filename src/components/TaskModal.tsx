@@ -123,6 +123,23 @@ export function TaskModal() {
     setLocalSubtasks(prev => prev.map(st => st.id === id ? { ...st, done: !st.done } : st));
   const deleteLocalSubtask = (id: string) =>
     setLocalSubtasks(prev => prev.filter(st => st.id !== id));
+  const stopRecurring = async () => {
+    if (!editingTask) return;
+    const parentId = (editingTask as any).recurringParentId || editingTask.id;
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const { tasks, updateTask, deleteTask } = useTaskStore.getState();
+    // Видаляємо всі майбутні копії
+    tasks.forEach(t => {
+      const isChild = (t as any).recurringParentId === parentId || t.id === parentId;
+      const taskDate = new Date(t.date);
+      taskDate.setHours(0,0,0,0);
+      if (isChild && taskDate > today) deleteTask(t.id);
+    });
+    // Зупиняємо батьківську задачу
+    updateTask(parentId, { recurring: false } as any);
+    close();
+  };
 
   // Read live subtasks from store so changes (add/toggle/delete) are reflected instantly
   const liveTask = editingTask ? tasks.find(t => t.id === editingTask.id) || null : null;
@@ -241,6 +258,12 @@ export function TaskModal() {
                 ))}
               </div>
             )}
+            {editingTask && (editingTask as any).recurringParentId || (editingTask && editingTask.recurring) ? (
+              <button type="button" onClick={stopRecurring}
+                className="w-full mt-2 py-2 rounded-xl text-xs font-black text-rose-600 border border-rose-200 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:border-rose-800 transition-all flex items-center justify-center gap-2">
+                <span>⛔</span> Зупинити повторення (видалити майбутні)
+              </button>
+            ) : null}
           </div>
 
           {/* Subtasks */}
