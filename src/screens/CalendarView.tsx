@@ -375,7 +375,7 @@ export function CalendarView() {
   const todayWeekMonday = startOfWeek(TODAY,{weekStartsOn:1});
   const weekRowRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (viewMode === 'month') { setTimeout(() => weekRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 100); }
+    if (viewMode === 'month') { setTimeout(() => weekRowRef.current?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 100); }
   }, [viewMode, currentDate]);
   useEffect(() => { setSelectedCal(null); }, [viewMode]);
 
@@ -507,7 +507,7 @@ export function CalendarView() {
           </div>
           <button onClick={()=>{setSelectedDate(TODAY);setEditingTask(null);setTaskModalOpen(true);}} className="flex items-center gap-1 text-[10px] font-black text-white bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1.5 rounded-lg uppercase"><Plus className="w-3 h-3"/></button>
           <button onClick={()=>setImportOpen(true)} className="text-[10px] text-indigo-600 bg-indigo-50 border border-indigo-200 p-1.5 rounded-lg"><Upload className="w-3.5 h-3.5"/></button>
-          <button onClick={() => { setCurrentDate(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)); setTimeout(() => weekRowRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 100); }} className="hidden sm:block text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1.5 rounded-lg uppercase">Сьогодні</button>
+          <button onClick={() => { setCurrentDate(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)); setTimeout(() => weekRowRef.current?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 100); }} className="hidden sm:block text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-700 px-2 py-1.5 rounded-lg uppercase">Сьогодні</button>
         </div>
       </div>
 
@@ -614,7 +614,7 @@ export function CalendarView() {
               const dayTasks = getMonthDayTasks(day);
               const isToday=isSameDay(day,TODAY), isCurMonth=isSameMonth(day,currentDate);
               const isWknd = day.getDay()===0||day.getDay()===6;
-              const isScrollAnchor = isSameDay(day, todayWeekMonday);
+              const isScrollAnchor = isSameDay(day, TODAY);
               return (
                 <div key={i} ref={isScrollAnchor ? weekRowRef : undefined}
                   onDragOver={e=>e.preventDefault()} onDrop={e=>handleDrop(e,day)}
