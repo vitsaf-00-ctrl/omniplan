@@ -499,7 +499,7 @@ export function CalendarView() {
           {activeProjectFilter&&<span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-lg hidden sm:block"># {activeProjectFilter}</span>}
           <div className="flex bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
             {(['month','week','timeline','day'] as const).map(m=>(
-              <button key={m} onClick={()=>{ setViewMode(m); if(m==='day'||m==='timeline') setDayDate(TODAY); }}
+              <button key={m} onClick={()=>{ setViewMode(m); if(m==='day'||m==='timeline') setDayDate(TODAY); if(m==='week') setCurrentDate(TODAY); }}
                 className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
                 {m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}
               </button>
