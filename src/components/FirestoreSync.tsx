@@ -129,7 +129,10 @@ export function FirestoreSync() {
     unsubRef.current = subscribeToUserTasks(
       user.uid,
       (tasks) => {
+        // Firestore sync не повинна потрапляти в undo-history
+        useTaskStore.temporal.getState().pause();
         setTasks(tasks);
+        useTaskStore.temporal.getState().resume();
         // Запускаємо планування тільки один раз при першому завантаженні
         if (!scheduledRef.current) {
           scheduledRef.current = true;
