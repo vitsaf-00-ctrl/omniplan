@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
+import { useUndoRedo } from './useUndoRedo';
 
 export function useKeyboardShortcuts() {
   const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
+  const { undo, redo } = useUndoRedo();
   const selectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -31,6 +33,20 @@ export function useKeyboardShortcuts() {
 
       const selectedId = selectedIdRef.current;
       const selectedTask = selectedId ? getTaskById(selectedId) : null;
+
+      // Ctrl+Z — undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      // Ctrl+Y / Ctrl+Shift+Z — redo
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        redo();
+        return;
+      }
 
       // N — нова задача
       if (e.key === 'n' && !e.ctrlKey && !e.metaKey) {

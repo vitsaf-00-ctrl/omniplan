@@ -1,4 +1,6 @@
-import { create } from 'zustand';
+import { create, useStore } from 'zustand';
+import { temporal } from 'zundo';
+import type { TemporalState } from 'zundo';
 import { fsSetTask, fsDeleteTask } from '../lib/taskFirestore';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
@@ -108,7 +110,9 @@ interface TaskStore {
   getWeekStats: () => { total:number; done:number; dueToday:number; dueTomorrow:number; percentage:number };
 }
 
-export const useTaskStore = create<TaskStore>((set, get) => ({
+export const useTaskStore = create<TaskStore>()(
+  temporal(
+    (set, get) => ({
   tasks: [],
   projects: PROJECTS,
   activeProjectFilter: null,
@@ -278,4 +282,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const dueTomorrow = tasks.filter(t => { const d=new Date(t.date); return !t.someday && d.toDateString()===tomorrow.toDateString() && t.status!=='done'; }).length;
     return { total:wt.length, done, dueToday, dueTomorrow, percentage: wt.length>0 ? Math.round((done/wt.length)*100) : 0 };
   },
-}));
+    }),
+    {
+      partialize: (state) => ({ tasks: state.tasks }),
+      limit: 50,
+    }
+  )
+);
+
+export const useTemporalStore = <T>(selector: (state: TemporalState<{ tasks: Task[] }>) => T): T =>
+  useStore(useTaskStore.temporal, selector);
