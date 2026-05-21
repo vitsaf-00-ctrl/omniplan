@@ -27,8 +27,7 @@ export interface Task {
   recurringType?: string;
   recurringParentId?: string;
   order?: number;
-  reminderEnabled?: boolean;
-  reminderTime?: string;
+  notifyAtTime?: boolean;
   googleCalendarSync?: boolean;
   subtasks?: SubTask[];
   createdAt: Date;

@@ -193,8 +193,8 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
   const hours = Array.from({ length: TL_HOURS }, (_, i) => i + TL_START);
   const isToday = isSameDay(day, TODAY);
   const allTasks = getTasksForDay(day);
-  const timeless = allTasks.filter(t => !t.someday && !t.time && (!t.reminderTime || !t.reminderTime.trim()));
-  const timed = allTasks.filter(t => !t.someday && !!(t.time || t.reminderTime));
+  const timeless = allTasks.filter(t => !t.someday && !t.time);
+  const timed = allTasks.filter(t => !t.someday && !!t.time);
 
   const now = new Date();
   const nowTop = (now.getHours() - TL_START) * HOUR_PX + (now.getMinutes() / 60) * HOUR_PX;
@@ -267,7 +267,7 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
                 style={{top:`${(h - TL_START) * HOUR_PX + HOUR_PX / 2}px`}}/>
             ))}
             {timed.map(t => {
-              const timeStr = t.time || t.reminderTime || '';
+              const timeStr = t.time || '';
               const [h] = timeStr.split(':').map(Number);
               if (!timeStr || h < TL_START || h > TL_END) return null;
               const top = timeToTop(timeStr);
@@ -279,7 +279,7 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
                   className={`absolute left-2 right-2 rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${col} ${isDone ? 'opacity-50' : ''}`}
                   style={{top:`${top}px`, minHeight:'44px', zIndex:1}}>
                   <p className={`text-xs font-bold leading-tight ${isDone ? 'line-through' : ''}`}>{t.title}</p>
-                  <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time || t.reminderTime} · {t.project}</p>
+                  <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time} · {t.project}</p>
                   {t.subtasks && t.subtasks.length > 0 && (
                     <div className="flex items-center gap-1 mt-1">
                       <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">

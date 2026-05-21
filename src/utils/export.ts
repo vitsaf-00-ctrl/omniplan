@@ -7,7 +7,7 @@ export function exportToExcel(tasks: Task[]) {
     'Проєкт': t.project,
     'Статус': t.status === 'done' ? 'Готово' : t.status === 'in_progress' ? 'В процесі' : 'Заплановано',
     'Дата': new Date(t.date).toLocaleDateString('uk-UA'),
-    'Час': t.time || t.reminderTime || '',
+    'Час': t.time || '',
     'Пріоритет': t.priority === 'high' ? 'Високий' : t.priority === 'medium' ? 'Середній' : t.priority === 'low' ? 'Низький' : '',
     'Підзадачі': t.subtasks ? `${t.subtasks.filter(s => s.done).length}/${t.subtasks.length}` : '',
     'Нотатки': t.notes || '',

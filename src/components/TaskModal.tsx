@@ -16,8 +16,7 @@ export function TaskModal() {
   const [notes, setNotes] = useState('');
   const [recurring, setRecurring] = useState(false);
   const [recurringType, setRecurringType] = useState<'daily'|'weekdays'|'weekly'|'monthly'>('weekly');
-  const [reminder, setReminder] = useState(false);
-  const [reminderTime, setReminderTime] = useState('09:00');
+  const [notifyAtTime, setNotifyAtTime] = useState(false);
   const [gcal, setGcal] = useState(false);
   const [priority, setPriority] = useState<Priority | null>(null);
   const [taskTime, setTaskTime] = useState('');
@@ -29,27 +28,27 @@ export function TaskModal() {
     if (editingTask) {
       setTitle(editingTask.title); setProject(editingTask.project); setStatus(editingTask.status);
       setDate(format(new Date(editingTask.date),'yyyy-MM-dd')); setNotes(editingTask.notes||'');
-      setRecurring(editingTask.recurring||false); setRecurringType((editingTask as any).recurringType||'weekly'); setReminder(editingTask.reminderEnabled||false);
-      setReminderTime(editingTask.reminderTime||'09:00'); setGcal(editingTask.googleCalendarSync||false);
+      setRecurring(editingTask.recurring||false); setRecurringType((editingTask as any).recurringType||'weekly');
+      setNotifyAtTime(editingTask.notifyAtTime||false); setGcal(editingTask.googleCalendarSync||false);
       setSomeday(editingTask.someday||false); setPriority(editingTask.priority||null);
       setTaskTime(editingTask.time||''); setLocalSubtasks([]);
     } else {
       setTitle(''); setProject(PROJECTS[0].name); setStatus('todo');
       setDate(format(selectedDate||new Date(),'yyyy-MM-dd'));
-      setNotes(''); setRecurring(false); setRecurringType('weekly'); setReminder(false); setReminderTime('09:00'); setGcal(false); setSomeday(false);
+      setNotes(''); setRecurring(false); setRecurringType('weekly');
+      setNotifyAtTime(false); setGcal(false); setSomeday(false);
       setPriority(null); setTaskTime(''); setLocalSubtasks([]);
     }
     setNewSubtask('');
   }, [isTaskModalOpen, editingTask, selectedDate]);
 
-  // ESC closes modal with unsaved-changes guard (all fields)
-  const stateRef = useRef({ title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen });
-  stateRef.current = { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen };
+  const stateRef = useRef({ title, notes, project, status, date, someday, recurring, notifyAtTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen });
+  stateRef.current = { title, notes, project, status, date, someday, recurring, notifyAtTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !stateRef.current.isTaskModalOpen) return;
-      const { title, notes, project, status, date, someday, recurring, reminder, reminderTime, priority, taskTime, localSubtasks, editingTask } = stateRef.current;
+      const { title, notes, project, status, date, someday, recurring, notifyAtTime, priority, taskTime, localSubtasks, editingTask } = stateRef.current;
       const hasChanges = editingTask
         ? title !== editingTask.title
           || notes !== (editingTask.notes || '')
@@ -58,8 +57,7 @@ export function TaskModal() {
           || date !== format(new Date(editingTask.date), 'yyyy-MM-dd')
           || someday !== (editingTask.someday || false)
           || recurring !== (editingTask.recurring || false)
-          || reminder !== (editingTask.reminderEnabled || false)
-          || reminderTime !== (editingTask.reminderTime || '09:00')
+          || notifyAtTime !== (editingTask.notifyAtTime || false)
           || priority !== (editingTask.priority || null)
           || taskTime !== (editingTask.time || '')
         : title.trim() !== ''
@@ -68,7 +66,7 @@ export function TaskModal() {
           || status !== 'todo'
           || someday
           || recurring
-          || reminder
+          || notifyAtTime
           || priority !== null
           || taskTime !== ''
           || localSubtasks.length > 0;
@@ -95,7 +93,8 @@ export function TaskModal() {
       date: new Date(date+'T00:00:00'),
       tagColor: getProjectColor(project),
       notes:notes.trim(), recurring, recurringType, someday,
-      reminderEnabled:reminder, reminderTime, googleCalendarSync:gcal,
+      notifyAtTime: notifyAtTime && !!taskTime ? true : undefined,
+      googleCalendarSync:gcal,
       priority: priority || undefined, time: taskTime || undefined,
     };
     if (editingTask) updateTask(editingTask.id, data);
@@ -132,7 +131,6 @@ export function TaskModal() {
     const recurringParentId = (editingTask as any).recurringParentId as string | undefined;
     const parentId = recurringParentId || editingTask.id;
 
-    // Знаходимо майбутні копії, зв'язані через recurringParentId
     const futureCopies = tasks.filter(t => {
       const tParent = (t as any).recurringParentId as string | undefined;
       const d = new Date(t.date);
@@ -142,7 +140,6 @@ export function TaskModal() {
 
     futureCopies.forEach(t => deleteTask(t.id));
 
-    // Fallback для старих задач, чиї копії не мають recurringParentId — шукаємо за назвою
     const hasLinkedChildren = futureCopies.some(t => (t as any).recurringParentId === parentId);
     if (!recurringParentId && !hasLinkedChildren) {
       const titleNorm = editingTask.title.trim().toLowerCase();
@@ -160,7 +157,6 @@ export function TaskModal() {
     close();
   };
 
-  // Read live subtasks from store so changes (add/toggle/delete) are reflected instantly
   const liveTask = editingTask ? tasks.find(t => t.id === editingTask.id) || null : null;
   const subtasks = editingTask ? (liveTask?.subtasks || []) : localSubtasks;
   const subtasksDone = subtasks.filter(s => s.done).length;
@@ -181,7 +177,6 @@ export function TaskModal() {
           <h2 className="text-sm font-black text-slate-800 dark:text-white">{editingTask?'Редагувати':'Нове завдання'}</h2>
           <div className="flex items-center gap-1">
             <button onClick={handleGcal} title="Google Calendar" className={`p-1.5 rounded-lg transition-colors ${gcal?'bg-blue-100 text-blue-600':'text-slate-400 hover:bg-slate-100 hover:text-blue-600'}`}><ExternalLink className="w-4 h-4"/></button>
-            <button onClick={()=>setReminder(!reminder)} title="Нагадування" className={`p-1.5 rounded-lg transition-colors ${reminder?'bg-amber-100 text-amber-600':'text-slate-400 hover:bg-slate-100 hover:text-amber-600'}`}><Bell className="w-4 h-4"/></button>
             <button onClick={close} className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-400"><X className="w-4 h-4"/></button>
           </div>
         </div>
@@ -211,6 +206,7 @@ export function TaskModal() {
               </div>
             </div>
           </div>
+
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Дата</label>
@@ -219,8 +215,18 @@ export function TaskModal() {
             </div>
             <div>
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Час</label>
-              <input type="time" value={taskTime} onChange={e=>setTaskTime(e.target.value)}
-                className="w-full text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
+              <div className="flex gap-1.5">
+                <input type="time" value={taskTime} onChange={e=>{ setTaskTime(e.target.value); if (!e.target.value) setNotifyAtTime(false); }}
+                  className={`flex-1 text-sm font-semibold border rounded-lg px-2 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-colors
+                    ${notifyAtTime && taskTime ? 'border-amber-400' : 'border-slate-200 dark:border-slate-600'}`}/>
+                <button type="button" disabled={!taskTime}
+                  onClick={() => setNotifyAtTime(!notifyAtTime)}
+                  title="Сповістити о цьому часі"
+                  className={`p-2 rounded-lg border transition-colors disabled:opacity-30 disabled:cursor-not-allowed
+                    ${notifyAtTime && taskTime ? 'bg-amber-100 border-amber-400 text-amber-600' : 'border-slate-200 dark:border-slate-600 text-slate-400 hover:border-amber-300 hover:text-amber-500'}`}>
+                  <Bell className="w-4 h-4"/>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -246,16 +252,6 @@ export function TaskModal() {
 
           <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Нотатка..." rows={2}
             className="w-full text-sm placeholder-slate-300 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30"/>
-
-          {/* Reminder */}
-          {reminder && (
-            <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-xl p-3">
-              <Bell className="w-4 h-4 text-amber-500 shrink-0"/>
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 flex-1">Нагадати о</span>
-              <input type="time" value={reminderTime} onChange={e=>setReminderTime(e.target.value)}
-                className="text-sm font-bold text-amber-700 border border-amber-200 rounded-lg px-2 py-1 bg-white"/>
-            </div>
-          )}
 
           {/* Recurring */}
           <div>

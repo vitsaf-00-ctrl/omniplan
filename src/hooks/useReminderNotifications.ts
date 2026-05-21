@@ -15,8 +15,8 @@ export function useReminderNotifications() {
       const dayKey = now.toDateString();
 
       for (const task of tasks) {
-        if (!task.reminderEnabled || task.status === 'done' || task.someday) continue;
-        if (task.reminderTime !== hhmm) continue;
+        if (!task.notifyAtTime || !task.time || task.status === 'done' || task.someday) continue;
+        if (task.time !== hhmm) continue;
         const key = `${dayKey}|${task.id}`;
         if (firedRef.current.has(key)) continue;
         firedRef.current.add(key);

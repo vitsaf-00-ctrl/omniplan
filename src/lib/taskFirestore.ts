@@ -20,8 +20,7 @@ function taskToDoc(task: Task): Record<string, unknown> {
     recurringType: (task as any).recurringType || null,
     recurringParentId: (task as any).recurringParentId || null,
     order: task.order ?? null,
-    reminderEnabled: task.reminderEnabled ?? false,
-    reminderTime: task.reminderTime ?? '',
+    notifyAtTime: task.notifyAtTime ?? false,
     googleCalendarSync: task.googleCalendarSync ?? false,
     subtasks: (task.subtasks ?? []).map(st => ({
       id: st.id,
@@ -52,8 +51,7 @@ function docToTask(id: string, raw: Record<string, unknown>): Task {
     recurringType: (raw.recurringType as string) || undefined,
     recurringParentId: (raw.recurringParentId as string) || undefined,
     order: typeof raw.order === 'number' ? raw.order : undefined,
-    reminderEnabled: (raw.reminderEnabled as boolean) || undefined,
-    reminderTime: (raw.reminderTime as string) || undefined,
+    notifyAtTime: (raw.notifyAtTime as boolean) || undefined,
     googleCalendarSync: (raw.googleCalendarSync as boolean) || undefined,
     subtasks: ((raw.subtasks as unknown[]) ?? []).map((st: unknown) => {
       const s = st as Record<string, unknown>;

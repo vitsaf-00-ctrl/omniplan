@@ -15,8 +15,10 @@ export function Header() {
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const todayStr = new Date().toDateString();
   const notifs = tasks
-    .filter(t => t.reminderEnabled && t.status !== 'done' && !t.someday)
+    .filter(t => t.notifyAtTime && t.time && t.status !== 'done' && !t.someday
+      && new Date(t.date).toDateString() === todayStr)
     .slice(0, 10);
   const unread = notifs.filter(t => !readIds.has(t.id)).length;
 
@@ -91,9 +93,9 @@ export function Header() {
                         <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{t.title}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           <span className="text-[10px] text-slate-400">{t.project}</span>
-                          {t.reminderTime && <>
+                          {t.time && <>
                             <span className="text-slate-300">·</span>
-                            <span className="text-[10px] text-amber-500 font-bold">{t.reminderTime}</span>
+                            <span className="text-[10px] text-amber-500 font-bold">{t.time}</span>
                           </>}
                         </div>
                       </div>
