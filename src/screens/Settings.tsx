@@ -152,21 +152,6 @@ function AppearanceTab() {
             </button>
           ))}
         </div>
-      <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl space-y-3">
-        <div>
-          <p className="text-sm font-bold text-slate-800 dark:text-white">Видалити задачі: червень 2026 та 27.05.2026</p>
-          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Видаляє всі задачі на червень 2026 і 27 травня 2026. Дію не можна скасувати.</p>
-        </div>
-        <button onClick={cleanJuneAndMay27} disabled={isCleaningJune} className="w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 flex items-center justify-center gap-2">
-          {isCleaningJune ? <span>Очищення...</span> : <span>Видалити червень + 27.05</span>}
-        </button>
-        {juneResult && <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg px-3 py-2">{juneResult}</p>}
-      </div>
-    </div>
-  );
-}
-
-function NotificationsTab() {
   const { settings, updateSettings } = useTaskStore();
   const [emailAlerts, setEmailAlerts] = useState(settings.notifyEmail);
   const [desktopAlerts, setDesktopAlerts] = useState(false);
