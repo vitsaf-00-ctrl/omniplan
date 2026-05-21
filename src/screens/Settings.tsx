@@ -80,16 +80,6 @@ function ProfileTab() {
         {saved && <Check className="w-4 h-4"/>}
         {saved ? 'Збережено!' : 'Save Changes'}
       </button>
-      <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl space-y-3">
-        <div>
-          <p className="text-sm font-bold text-slate-800 dark:text-white">Видалити дублікати на червень 2026</p>
-          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">Видаляє задачі з однаковою назвою та датою у червні 2026. Дію не можна скасувати.</p>
-        </div>
-        <button onClick={cleanJuneDuplicates} disabled={isCleaningDupes} className="w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 flex items-center justify-center gap-2">
-          {isCleaningDupes ? <span>Очищення...</span> : <span>Видалити дублікати червня</span>}
-        </button>
-        {dupeResult && <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg px-3 py-2">{dupeResult}</p>}
-      </div>
     </div>
   );
 }
