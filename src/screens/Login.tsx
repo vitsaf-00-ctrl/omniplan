@@ -1,21 +1,12 @@
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '@/src/lib/firebase';
-import { useAppStore } from '@/src/store/useAppStore';
-
 export function Login() {
-  const { setUser, setAuthLoaded } = useAppStore();
-
   const handleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error(error);
     }
-  };
-
-  const handleDevLogin = () => {
-    setUser({ email: 'dev@omniplan.local', displayName: 'Віталій Сафонов', uid: 'dev-user', photoURL: null } as any);
-    setAuthLoaded(true);
   };
 
   return (

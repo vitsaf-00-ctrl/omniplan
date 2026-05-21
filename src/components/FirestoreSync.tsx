@@ -2,9 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task } from '../store/useTaskStore';
 import { subscribeToUserTasks, subscribeToUserProjects, initUserProjects } from '../lib/taskFirestore';
-import { collection, getDocs, setDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, setDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { randomUUID } from 'crypto';
 
 function getNextDate(task: Task): Date | null {
   const base = new Date(task.date);

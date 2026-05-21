@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
-import { BarChart2, TrendingUp, CheckCircle2, FileText, Download } from 'lucide-react';
+import { BarChart2, CheckCircle2, FileText, Download } from 'lucide-react';
 import { useTaskStore } from '../store/useTaskStore';
 import { exportToExcel, exportToPDF } from '../utils/export';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
 const TODAY = new Date();
-
-const CHART_COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#3b82f6','#ec4899','#14b8a6'];
 
 const DOT: Record<string,string> = {
   blue:'#3b82f6', indigo:'#6366f1', purple:'#8b5cf6',
@@ -198,7 +196,7 @@ export function Statistics() {
             <div className="flex items-center gap-4">
               <PieChart slices={projectSlices}/>
               <div className="flex-1 space-y-1.5">
-                {projectSlices.map((s, i) => {
+                {projectSlices.map((s) => {
                   const total = projectSlices.reduce((a, b) => a + b.value, 0);
                   const pct = total > 0 ? Math.round((s.value / total) * 100) : 0;
                   return (

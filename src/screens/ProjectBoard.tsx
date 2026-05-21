@@ -130,10 +130,6 @@ function TableView({ tasks, onEdit, onMove }: { tasks:Task[]; onEdit:(t:Task)=>v
   );
 }
 
-const STATUS_KEYS: Record<string, TaskStatus> = {
-  todo: 'todo', in_progress: 'in_progress', done: 'done',
-};
-
 export function ProjectBoard() {
   const [view, setView] = useState<'board'|'list'|'table'>('board');
   const { getFilteredTasks, moveTask, activeProjectFilter } = useTaskStore();

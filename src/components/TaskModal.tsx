@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 
 export function TaskModal() {
   const { isTaskModalOpen, setTaskModalOpen, editingTask, setEditingTask, selectedDate } = useAppStore();
-  const { tasks, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask, updateSubtask } = useTaskStore();
+  const { tasks, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask } = useTaskStore();
 
   const [title, setTitle] = useState('');
   const [project, setProject] = useState(PROJECTS[0].name);

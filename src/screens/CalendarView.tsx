@@ -46,30 +46,6 @@ const TAG_BG: Record<string,string> = {
 
 type Ctx = { x: number; y: number; task: Task };
 
-// Monday-style pill task
-function TaskPill({ task, compact }: { task:Task; compact?:boolean }) {
-  const { setTaskModalOpen, setEditingTask } = useAppStore();
-  const { moveTask } = useTaskStore();
-  const [ctx, setCtx] = useState<Ctx | null>(null);
-  const isDone = task.status==='done', isIP = task.status==='in_progress';
-  const pill = isDone ? PILL_DONE : isIP ? PILL_IP : PILL_COLORS[task.tagColor]||PILL_COLORS.slate;
-
-  return (
-    <>
-      <div draggable onDragStart={e=>e.dataTransfer.setData('taskId',task.id)}
-        onDoubleClick={e=>{e.stopPropagation();setEditingTask(task);setTaskModalOpen(true);}}
-        onClick={e=>{e.stopPropagation();moveTask(task.id,isDone?'todo':'done');}}
-        onContextMenu={e=>{e.preventDefault();e.stopPropagation();setCtx({x:e.clientX,y:e.clientY,task});}}
-        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 ${pill}`}
-        title={task.title}>
-        {isIP&&<Clock className="w-2.5 h-2.5 shrink-0 animate-pulse"/>}
-        {task.recurring&&<Repeat className="w-2.5 h-2.5 shrink-0 opacity-70"/>}
-        <span className="truncate">{task.title}</span>
-      </div>
-      {ctx&&<TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={()=>setCtx(null)}/>}
-    </>
-  );
-}
 
 function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   task: Task; dayTs: number; isSelected: boolean; onSelect: (x: number, y: number) => void;
@@ -165,13 +141,10 @@ function WeekTaskCard({ task }: { task:Task }) {
 function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()=>void }) {
   const { getTasksForDay, moveTask } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
-  const { moveTaskToDate: storeMove } = useTaskStore();
   const tasks = getTasksForDay(day);
   const isToday = isSameDay(day, TODAY);
 
   const selectDay = (d: Date) => { setSelectedDate(d); setEditingTask(null); setTaskModalOpen(true); };
-
-  const hours = Array.from({length:16},(_,i)=>i+7); // 7:00 - 22:00
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -367,7 +340,7 @@ export function CalendarView() {
   const [dragOverInfo, setDragOverInfo] = useState<{dayTs: number; taskId: string} | null>(null);
   const [selectedCal, setSelectedCal] = useState<{taskId: string; task: Task; x: number; y: number} | null>(null);
 
-  const { getTasksForDay, moveTask, moveTaskToDate, copyTaskToDate, activeProjectFilter } = useTaskStore();
+  const { getTasksForDay, moveTask, activeProjectFilter } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate, clipboardTaskId, clipboardMode, clearClipboard } = useAppStore();
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const { moveTaskToDate: storeMove, copyTaskToDate: storeCopy } = useTaskStore();
@@ -376,7 +349,6 @@ export function CalendarView() {
   const weekDays = Array.from({length:7}).map((_,i)=>addDays(weekStart,i));
   const monthDays = eachDayOfInterval({start:startOfWeek(startOfMonth(currentDate),{weekStartsOn:1}),end:endOfWeek(endOfMonth(currentDate),{weekStartsOn:1})});
 
-  const todayWeekMonday = startOfWeek(TODAY,{weekStartsOn:1});
   const weekRowRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (viewMode === 'month') { setTimeout(() => weekRowRef.current?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }), 100); }
