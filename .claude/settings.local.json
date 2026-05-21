@@ -21,7 +21,9 @@
       "Bash(npm install *)",
       "Bash(pkill -f \"vite\")",
       "Bash(rm verify_*.png)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(git push *)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/zundo/package.json'\\).version\\)\")"
     ]
   }
 }
