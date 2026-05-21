@@ -12,7 +12,16 @@
       "PowerShell(npm run *)",
       "Bash(cat)",
       "Bash(chmod +x \"D:/Claude Projects/omniplan/.git/hooks/pre-commit\")",
-      "Bash(git hook *)"
+      "Bash(git hook *)",
+      "Bash(npx playwright *)",
+      "Bash(node -e ' *)",
+      "Bash(npm list *)",
+      "Bash(npx --yes playwright@1.60.0 --version)",
+      "Read(//c/Users/User/AppData/Local/ms-playwright/**)",
+      "Bash(npm install *)",
+      "Bash(pkill -f \"vite\")",
+      "Bash(rm verify_*.png)",
+      "Bash(npm uninstall *)"
     ]
   }
 }
