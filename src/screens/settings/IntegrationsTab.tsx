@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Calendar, Slack, Chrome, Mail } from 'lucide-react';
+import { Slack, Chrome, Mail } from 'lucide-react';
 
 export function IntegrationsTab() {
   const [connected, setConnected] = useState<Record<string, boolean>>({});
   const integrations = [
-    { id: 'gcal', name: 'Google Calendar', desc: 'Синхронізація подій і задач', icon: Calendar, color: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' },
     { id: 'slack', name: 'Slack', desc: 'Сповіщення в канали Slack', icon: Slack, color: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' },
     { id: 'teams', name: 'Microsoft Teams', desc: 'Інтеграція з Teams', icon: Chrome, color: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' },
     { id: 'outlook', name: 'Outlook', desc: 'Синхронізація з поштою та календарем', icon: Mail, color: 'bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-800' },
