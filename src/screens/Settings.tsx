@@ -489,47 +489,6 @@ function MaintenanceTab() {
     return false;
   };
 
-  const [isCleaningDupes, setIsCleaningDupes] = useState(false);
-  const [dupeResult, setDupeResult] = useState<string | null>(null);
-
-  const cleanJuneDuplicates = async () => {
-    const auth = getAuth();
-    if (auth.currentUser === null) return;
-    setIsCleaningDupes(true);
-    setDupeResult(null);
-    try {
-      const tasksRef = collection(db, 'users', auth.currentUser.uid, 'tasks');
-      const snapshot = await getDocs(tasksRef);
-      const juneTasks: {id: string; title: string; date: string}[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const ms = data.date?.toMillis ? data.date.toMillis() : (data.date?.seconds ?? 0) * 1000;
-        const d = new Date(ms);
-        if (d.getFullYear() === 2026 && d.getMonth() === 5) {
-          juneTasks.push({id: docSnap.id, title: data.title, date: d.toISOString().slice(0,10)});
-        }
-      });
-      const seen = new Map();
-      const dupeIds: string[] = [];
-      juneTasks.forEach(t => {
-        const key = t.title + '_' + t.date;
-        if (seen.has(key)) { dupeIds.push(t.id); } else { seen.set(key, t.id); }
-      });
-      for (let i = 0; i < dupeIds.length; i += 500) {
-        const batch = writeBatch(db);
-        dupeIds.slice(i, i + 500).forEach(id => batch.delete(doc(tasksRef, id)));
-        await batch.commit();
-      }
-      const msg = dupeIds.length > 0 ? 'Видалено ' + dupeIds.length + ' дублікатів на червень.' : 'Дублікатів не знайдено.';
-      setDupeResult(msg);
-    } catch (e) {
-      console.error(e);
-      setDupeResult('Помилка. Перевір консоль.');
-    } finally {
-      setIsCleaningDupes(false);
-    }
-  };
-
   const cleanInvalidTasks = async () => {
     const auth = getAuth();
     if (!auth.currentUser) return;
@@ -677,6 +636,47 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
 
 export function Settings() {
   const [active, setActive] = useState<Tab>('profile');
+  const [isCleaningDupes, setIsCleaningDupes] = useState(false);
+  const [dupeResult, setDupeResult] = useState<string | null>(null);
+
+  const cleanJuneDuplicates = async () => {
+    const auth = getAuth();
+    if (auth.currentUser === null) return;
+    setIsCleaningDupes(true);
+    setDupeResult(null);
+    try {
+      const tasksRef = collection(db, 'users', auth.currentUser.uid, 'tasks');
+      const snapshot = await getDocs(tasksRef);
+      const juneTasks: {id: string; title: string; date: string}[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const ms = data.date?.toMillis ? data.date.toMillis() : (data.date?.seconds ?? 0) * 1000;
+        const d = new Date(ms);
+        if (d.getFullYear() === 2026 && d.getMonth() === 5) {
+          juneTasks.push({id: docSnap.id, title: data.title, date: d.toISOString().slice(0,10)});
+        }
+      });
+      const seen = new Map();
+      const dupeIds: string[] = [];
+      juneTasks.forEach(t => {
+        const key = t.title + '_' + t.date;
+        if (seen.has(key)) { dupeIds.push(t.id); } else { seen.set(key, t.id); }
+      });
+      for (let i = 0; i < dupeIds.length; i += 500) {
+        const batch = writeBatch(db);
+        dupeIds.slice(i, i + 500).forEach(id => batch.delete(doc(tasksRef, id)));
+        await batch.commit();
+      }
+      const msg = dupeIds.length > 0 ? 'Видалено ' + dupeIds.length + ' дублікатів на червень.' : 'Дублікатів не знайдено.';
+      setDupeResult(msg);
+    } catch (e) {
+      console.error(e);
+      setDupeResult('Помилка. Перевір консоль.');
+    } finally {
+      setIsCleaningDupes(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col md:flex-row h-full gap-4 overflow-hidden">
