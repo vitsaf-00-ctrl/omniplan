@@ -71,7 +71,7 @@ interface TaskStore {
   tasks: Task[];
   projects: Project[];
   activeProjectFilter: string | null;
-  settings: { email:string; notifyEmail:boolean; };
+  settings: { email:string; notifyEmail:boolean; notifyDesktop:boolean; };
 
   // Firestore sync state
   userId: string | null;
@@ -112,7 +112,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   projects: PROJECTS,
   activeProjectFilter: null,
-  settings: { email:'', notifyEmail:false },
+  settings: { email:'', notifyEmail:false, notifyDesktop:false },
   userId: null,
   isFirestoreLoaded: false,
 
