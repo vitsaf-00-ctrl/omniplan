@@ -22,6 +22,8 @@ export interface Task {
   tagColor: TagColor;
   notes?: string;
   recurring?: boolean;
+  recurringType?: string;
+  recurringParentId?: string;
   order?: number;
   reminderEnabled?: boolean;
   reminderTime?: string;

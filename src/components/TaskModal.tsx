@@ -123,20 +123,39 @@ export function TaskModal() {
     setLocalSubtasks(prev => prev.map(st => st.id === id ? { ...st, done: !st.done } : st));
   const deleteLocalSubtask = (id: string) =>
     setLocalSubtasks(prev => prev.filter(st => st.id !== id));
-  const stopRecurring = async () => {
+  const stopRecurring = () => {
     if (!editingTask) return;
-    const parentId = (editingTask as any).recurringParentId || editingTask.id;
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
     const { tasks, updateTask, deleteTask } = useTaskStore.getState();
-    // Видаляємо всі майбутні копії
-    tasks.forEach(t => {
-      const isChild = (t as any).recurringParentId === parentId || t.id === parentId;
-      const taskDate = new Date(t.date);
-      taskDate.setHours(0,0,0,0);
-      if (isChild && taskDate > today) deleteTask(t.id);
+
+    const recurringParentId = (editingTask as any).recurringParentId as string | undefined;
+    const parentId = recurringParentId || editingTask.id;
+
+    // Знаходимо майбутні копії, зв'язані через recurringParentId
+    const futureCopies = tasks.filter(t => {
+      const tParent = (t as any).recurringParentId as string | undefined;
+      const d = new Date(t.date);
+      d.setHours(0, 0, 0, 0);
+      return (tParent === parentId || t.id === parentId) && d > today;
     });
-    // Зупиняємо батьківську задачу
+
+    futureCopies.forEach(t => deleteTask(t.id));
+
+    // Fallback для старих задач, чиї копії не мають recurringParentId — шукаємо за назвою
+    const hasLinkedChildren = futureCopies.some(t => (t as any).recurringParentId === parentId);
+    if (!recurringParentId && !hasLinkedChildren) {
+      const titleNorm = editingTask.title.trim().toLowerCase();
+      tasks
+        .filter(t => {
+          if (t.id === editingTask.id) return false;
+          const d = new Date(t.date);
+          d.setHours(0, 0, 0, 0);
+          return d > today && t.title.trim().toLowerCase() === titleNorm;
+        })
+        .forEach(t => deleteTask(t.id));
+    }
+
     updateTask(parentId, { recurring: false } as any);
     close();
   };

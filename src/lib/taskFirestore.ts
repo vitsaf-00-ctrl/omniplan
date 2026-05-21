@@ -3,7 +3,7 @@ import {
   collection, doc, setDoc, deleteDoc, onSnapshot,
   query, orderBy, where, Timestamp, getDocs,
 } from 'firebase/firestore';
-import type { Task } from '../store/useTaskStore';
+import type { Task, TagColor } from '../store/useTaskStore';
 
 // ─── Serialization ───────────────────────────────────────────────────────────
 
@@ -177,11 +177,11 @@ export async function respondToInvite(inviteId: string, status: 'accepted' | 're
 export interface FirestoreProject {
   id: string;
   name: string;
-  color: string;
+  color: TagColor;
   createdAt: Date;
 }
 
-const DEFAULT_PROJECTS = [
+const DEFAULT_PROJECTS: { id: string; name: string; color: TagColor }[] = [
   { id: 'ai-officer', name: 'AI officer', color: 'indigo' },
   { id: 'dis', name: 'ДІС', color: 'blue' },
   { id: 'haifom', name: 'Хайфом', color: 'blue' },
@@ -211,7 +211,7 @@ export async function initUserProjects(uid: string): Promise<FirestoreProject[]>
   return projects;
 }
 
-export async function addUserProject(uid: string, name: string, color: string): Promise<FirestoreProject> {
+export async function addUserProject(uid: string, name: string, color: TagColor): Promise<FirestoreProject> {
   const id = `proj_${Date.now()}`;
   const ref = collection(db, 'users', uid, 'projects');
   const createdAt = Timestamp.now();

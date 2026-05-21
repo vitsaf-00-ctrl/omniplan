@@ -169,6 +169,8 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
   const tasks = getTasksForDay(day);
   const isToday = isSameDay(day, TODAY);
 
+  const selectDay = (d: Date) => { setSelectedDate(d); setEditingTask(null); setTaskModalOpen(true); };
+
   const hours = Array.from({length:16},(_,i)=>i+7); // 7:00 - 22:00
 
   return (
@@ -212,6 +214,8 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
 function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; onNext: ()=>void }) {
   const { getTasksForDay } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
+
+  const selectDay = (d: Date) => { setSelectedDate(d); setEditingTask(null); setTaskModalOpen(true); };
 
   const hours = Array.from({ length: TL_HOURS }, (_, i) => i + TL_START);
   const isToday = isSameDay(day, TODAY);

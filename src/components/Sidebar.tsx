@@ -5,6 +5,7 @@ import { auth, db } from '../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { useState, useRef } from 'react';
 import { deleteUserProject, addUserProject } from '../lib/taskFirestore';
+import type { TagColor } from '../store/useTaskStore';
 import { doc, updateDoc, collection } from 'firebase/firestore';
 
 const DOT: Record<string,string> = {
@@ -12,14 +13,14 @@ const DOT: Record<string,string> = {
   emerald:'bg-emerald-400', amber:'bg-amber-400', rose:'bg-rose-400', slate:'bg-slate-400',
 };
 
-const COLORS = ['indigo','blue','purple','emerald','amber','rose','slate'];
+const COLORS: TagColor[] = ['indigo','blue','purple','emerald','amber','rose','slate'];
 
 export function Sidebar() {
   const { user, isMobileMenuOpen, setMobileMenuOpen, activeView, setActiveView } = useAppStore();
   const { projects, activeProjectFilter, setActiveProjectFilter, addProject, deleteProject, setProjects, userId } = useTaskStore();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newColor, setNewColor] = useState('indigo');
+  const [newColor, setNewColor] = useState<TagColor>('indigo');
   const [collapsed, setCollapsed] = useState(false);
   const [editingId, setEditingId] = useState<string|null>(null);
   const [editName, setEditName] = useState('');
