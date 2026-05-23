@@ -365,12 +365,29 @@ export function MyTasks() {
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 overflow-y-auto space-y-5 pr-0.5" onClick={e => e.stopPropagation()}>
-          {groupKeys.length === 0 && (
-            <div className="text-center py-12">
-              <CheckCircle2 className="w-10 h-10 text-slate-200 mx-auto mb-3"/>
-              <p className="text-sm font-bold text-slate-400">Завдань не знайдено</p>
-            </div>
-          )}
+          {groupKeys.length === 0 && (() => {
+            const hasAnyTasks = tasks.filter(t => !t.someday && t.status !== 'done').length > 0;
+            return hasAnyTasks ? (
+              <div className="text-center py-14">
+                <Search className="w-10 h-10 text-slate-100 dark:text-slate-700 mx-auto mb-3"/>
+                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Нічого не знайдено</p>
+                <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Спробуйте змінити фільтри або пошуковий запит</p>
+              </div>
+            ) : (
+              <div className="text-center py-14">
+                <CheckCircle2 className="w-12 h-12 text-slate-100 dark:text-slate-700 mx-auto mb-4"/>
+                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Завдань поки немає</p>
+                <p className="text-xs text-slate-300 dark:text-slate-600 mt-1 mb-4">Додайте першу задачу, щоб почати</p>
+                <button
+                  onClick={e => { e.stopPropagation(); setEditingTask(null); setTaskModalOpen(true); }}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5"/> Додати задачу
+                </button>
+                <p className="text-[10px] text-slate-300 dark:text-slate-600 mt-3">або натисніть <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-mono">N</kbd></p>
+              </div>
+            );
+          })()}
 
           {groupKeys.map(dateKey => {
             const dayTasks = getDisplayTasks(dateKey);

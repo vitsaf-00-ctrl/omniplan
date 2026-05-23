@@ -157,7 +157,18 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
         <button onClick={onNext} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><ChevronRight className="w-4 h-4"/></button>
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {tasks.length===0&&<div className="text-center py-8 text-slate-400 text-sm">Задач на цей день немає</div>}
+        {tasks.length === 0 && (
+          <div className="text-center py-10">
+            <CheckCircle2 className="w-10 h-10 text-slate-100 dark:text-slate-700 mx-auto mb-3"/>
+            <p className="text-sm font-bold text-slate-400 dark:text-slate-500 mb-3">Задач на цей день немає</p>
+            <button
+              onClick={() => selectDay(day)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+            >
+              <Plus className="w-3 h-3"/> Додати задачу
+            </button>
+          </div>
+        )}
         {tasks.map(t=>(
           <div key={t.id} className={`p-3 rounded-xl border-l-4 hover:shadow-md transition-all ${TAG_BG[t.tagColor]||TAG_BG.slate} ${t.status==='done'?'opacity-60':''}`}
             onDoubleClick={()=>{setEditingTask(t);setTaskModalOpen(true);}}>

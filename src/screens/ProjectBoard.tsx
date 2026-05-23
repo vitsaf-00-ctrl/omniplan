@@ -300,6 +300,13 @@ export function ProjectBoard() {
                                 )}
                               </Draggable>
                             ))}
+                            {col.tasks.length === 0 && !snapshot.isDraggingOver && (
+                              <div className="flex flex-col items-center justify-center py-8 text-center">
+                                <Circle className="w-7 h-7 text-slate-200 dark:text-slate-700 mb-2"/>
+                                <p className="text-xs text-slate-300 dark:text-slate-600 font-semibold">Немає задач</p>
+                                <p className="text-[10px] text-slate-200 dark:text-slate-700 mt-0.5">Перетягніть сюди</p>
+                              </div>
+                            )}
                             {provided.placeholder}
                           </div>
                         )}
