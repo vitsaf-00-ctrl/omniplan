@@ -5,7 +5,7 @@ import { useUndoRedo } from './useUndoRedo';
 import { useToastStore } from '../store/useToastStore';
 
 export function useKeyboardShortcuts() {
-  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId, setConfirmDialog } = useAppStore();
+  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId, setConfirmDialog, setSearchOpen } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
   const addToast = useToastStore(s => s.addToast);
@@ -28,6 +28,13 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Ctrl+F — відкрити пошук (завжди, навіть у полі вводу)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        setSearchOpen(true);
+        return;
+      }
+
       const active = document.activeElement;
       const isInput = active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' ||
         active?.tagName === 'SELECT' || (active as HTMLElement)?.isContentEditable;

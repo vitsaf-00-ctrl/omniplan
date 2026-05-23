@@ -24,6 +24,7 @@ interface AppState {
   clipboardMode: 'copy' | 'cut' | null;
   focusTaskId: string | null;
   confirmDialog: ConfirmDialog | null;
+  searchOpen: boolean;
 
   setUser: (u: User | null) => void;
   setAuthLoaded: (v: boolean) => void;
@@ -39,6 +40,7 @@ interface AppState {
   setSelectedTaskId: (id: string | null) => void;
   setFocusTaskId: (id: string | null) => void;
   setConfirmDialog: (dialog: ConfirmDialog | null) => void;
+  setSearchOpen: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -46,7 +48,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeView: 'today', theme: 'light',
   isTaskModalOpen: false, editingTask: null, selectedDate: undefined,
   clipboardTaskId: null, clipboardMode: null, focusTaskId: null, selectedTaskId: null,
-  confirmDialog: null,
+  confirmDialog: null, searchOpen: false,
 
   setUser: u => set({ user: u }),
   setAuthLoaded: v => set({ isAuthLoaded: v }),
@@ -66,4 +68,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedTaskId: (id) => set({ selectedTaskId: id }),
   setFocusTaskId: id => set({ focusTaskId: id }),
   setConfirmDialog: dialog => set({ confirmDialog: dialog }),
+  setSearchOpen: v => set({ searchOpen: v }),
 }));

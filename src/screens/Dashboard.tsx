@@ -10,6 +10,7 @@ import { Today } from './Today';
 import { Statistics } from './Statistics';
 import { FocusMode } from './FocusMode';
 import { TaskModal } from '../components/TaskModal';
+import { SearchOverlay } from '../components/SearchOverlay';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useReminderNotifications } from '../hooks/useReminderNotifications';
 
@@ -36,6 +37,7 @@ export function Dashboard() {
         </div>
       </main>
       <TaskModal/>
+      <SearchOverlay/>
       <MobileTabBar/>
     </div>
   );

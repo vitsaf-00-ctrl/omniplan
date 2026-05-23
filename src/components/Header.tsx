@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Plus, Bell, Target } from 'lucide-react';
+import { Menu, Plus, Bell, Target, Search } from 'lucide-react';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTaskStore } from '@/src/store/useTaskStore';
 
@@ -9,7 +9,7 @@ const TITLES: Record<string, string> = {
 };
 
 export function Header() {
-  const { setMobileMenuOpen, activeView, setTaskModalOpen, setEditingTask, setActiveView } = useAppStore();
+  const { setMobileMenuOpen, activeView, setTaskModalOpen, setEditingTask, setActiveView, setSearchOpen } = useAppStore();
   const { tasks } = useTaskStore();
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
@@ -47,6 +47,17 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* Search button */}
+        <button onClick={() => setSearchOpen(true)}
+          className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg transition-all">
+          <Search className="w-3.5 h-3.5"/>
+          <span className="text-[11px] text-slate-400">Ctrl+F</span>
+        </button>
+        <button onClick={() => setSearchOpen(true)}
+          className="sm:hidden p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+          <Search className="w-[18px] h-[18px]"/>
+        </button>
+
         {/* Focus button */}
         <button onClick={() => setActiveView('focus')}
           className="hidden sm:flex items-center gap-1.5 text-[10px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 px-2.5 py-1.5 rounded-lg hover:bg-indigo-100 transition-all uppercase tracking-widest">
