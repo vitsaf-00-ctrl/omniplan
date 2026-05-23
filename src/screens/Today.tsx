@@ -103,7 +103,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
 
 export function Today() {
   const { getTodayTasks, moveTask, updateTask } = useTaskStore();
-  const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
+  const { setTaskModalOpen, setEditingTask } = useAppStore();
   const tasks = getTodayTasks();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
