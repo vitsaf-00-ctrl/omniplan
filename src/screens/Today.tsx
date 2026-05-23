@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Plus, CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check } from 'lucide-react';
+import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check } from 'lucide-react';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
@@ -133,7 +133,6 @@ export function Today() {
   });
 
   const openEdit = (t: Task) => { setEditingTask(t); setTaskModalOpen(true); };
-  const openNew = () => { setSelectedDate(TODAY); setEditingTask(null); setTaskModalOpen(true); };
 
   const getOrdered = (statusKey: string, base: Task[]): Task[] => {
     const order = groupOrder[statusKey];
