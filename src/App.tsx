@@ -1,6 +1,7 @@
 import { AuthProvider } from '@/src/components/AuthProvider';
 import { FirestoreSync } from '@/src/components/FirestoreSync';
 import { ConfirmDialog } from '@/src/components/ConfirmDialog';
+import { ToastContainer } from '@/src/components/ToastContainer';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTaskStore } from '@/src/store/useTaskStore';
 import { Login } from '@/src/screens/Login';
@@ -38,6 +39,7 @@ function AppContent() {
     <>
       <Dashboard />
       <ConfirmDialog />
+      <ToastContainer />
     </>
   );
 }

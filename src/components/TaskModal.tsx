@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Repeat, Trash2, Bell, ExternalLink, Plus, Check, Calendar } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, PROJECTS, getProjectColor, TaskStatus, SubTask, Priority } from '../store/useTaskStore';
+import { useToastStore } from '../store/useToastStore';
 import { format } from 'date-fns';
 
 export function TaskModal() {
   const { isTaskModalOpen, setTaskModalOpen, editingTask, setEditingTask, selectedDate } = useAppStore();
   const { tasks, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask } = useTaskStore();
+  const addToast = useToastStore(s => s.addToast);
 
   const [title, setTitle] = useState('');
   const [project, setProject] = useState(PROJECTS[0].name);
@@ -97,8 +99,13 @@ export function TaskModal() {
       googleCalendarSync:gcal,
       priority: priority || undefined, time: taskTime || undefined,
     };
-    if (editingTask) updateTask(editingTask.id, data);
-    else addTask({ ...data, subtasks: localSubtasks.length > 0 ? localSubtasks : undefined });
+    if (editingTask) {
+      updateTask(editingTask.id, data);
+      addToast({ type: 'success', message: 'Зміни збережено' });
+    } else {
+      addTask({ ...data, subtasks: localSubtasks.length > 0 ? localSubtasks : undefined });
+      addToast({ type: 'success', message: `Задачу «${data.title}» додано` });
+    }
     close();
   };
 
@@ -331,7 +338,7 @@ export function TaskModal() {
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 shrink-0">
-          {editingTask&&<button onClick={()=>{deleteTask(editingTask.id);close();}} className="p-2.5 rounded-xl border-2 border-rose-100 text-rose-500 hover:bg-rose-50 hover:border-rose-300 transition-all"><Trash2 className="w-4 h-4"/></button>}
+          {editingTask&&<button onClick={()=>{const t=editingTask;deleteTask(t.id);close();addToast({type:'info',message:`Видалено «${t.title}»`});}} className="p-2.5 rounded-xl border-2 border-rose-100 text-rose-500 hover:bg-rose-50 hover:border-rose-300 transition-all"><Trash2 className="w-4 h-4"/></button>}
           <button onClick={close} className="flex-1 py-2.5 rounded-xl text-xs font-black text-slate-600 bg-slate-100 hover:bg-slate-200 uppercase tracking-widest">Скасувати</button>
           <button onClick={submit} disabled={!title.trim()} className="flex-1 py-2.5 rounded-xl text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 uppercase tracking-widest">
             {editingTask?'Зберегти':'Додати'}

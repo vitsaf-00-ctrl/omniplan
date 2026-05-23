@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
+import { useToastStore } from '../store/useToastStore';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 
 
 interface Props {
@@ -13,6 +15,8 @@ interface Props {
 export function TaskContextMenu({ x, y, task, onClose }: Props) {
   const { setActiveView, setTaskModalOpen, setEditingTask, setFocusTaskId, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode } = useAppStore();
   const { moveTaskToDate, duplicateTask, deleteTask, updateTask } = useTaskStore();
+  const addToast = useToastStore(s => s.addToast);
+  const { undo } = useUndoRedo();
   const dup = duplicateTask;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
@@ -142,7 +146,7 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
             <p className="text-[10px] text-rose-600 dark:text-rose-400 font-bold mb-2">Підтвердити видалення?</p>
             <div className="flex gap-2">
               <button
-                onClick={() => { deleteTask(task.id); onClose(); }}
+                onClick={() => { deleteTask(task.id); onClose(); addToast({ type: 'info', message: `Видалено «${task.title}»`, action: { label: 'Скасувати', onClick: undo } }); }}
                 className="flex-1 text-[10px] font-bold bg-rose-500 text-white px-2 py-1.5 rounded-lg"
               >
                 Так

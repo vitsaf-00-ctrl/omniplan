@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
 import { useUndoRedo } from './useUndoRedo';
+import { useToastStore } from '../store/useToastStore';
 
 export function useKeyboardShortcuts() {
   const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId, setConfirmDialog } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
-  const { undo, redo } = useUndoRedo();
+  const { undo, redo, canUndo, canRedo } = useUndoRedo();
+  const addToast = useToastStore(s => s.addToast);
   const selectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -37,14 +39,14 @@ export function useKeyboardShortcuts() {
       // Ctrl+Z — undo
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
-        undo();
+        if (canUndo) { undo(); addToast({ type: 'info', message: 'Скасовано' }); }
         return;
       }
 
       // Ctrl+Y / Ctrl+Shift+Z — redo
       if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
-        redo();
+        if (canRedo) { redo(); addToast({ type: 'info', message: 'Повторено' }); }
         return;
       }
 
@@ -85,12 +87,14 @@ export function useKeyboardShortcuts() {
       // Delete — видалити
       if (e.key === 'Delete') {
         e.preventDefault();
+        const taskTitle = selectedTask.title;
         setConfirmDialog({
-          message: `Видалити «${selectedTask.title}»?`,
+          message: `Видалити «${taskTitle}»?`,
           onConfirm: () => {
             deleteTask(selectedId);
             selectedIdRef.current = null;
             (window as any).__notifySelectedId?.(null);
+            addToast({ type: 'info', message: `Видалено «${taskTitle}»`, action: { label: 'Скасувати', onClick: undo } });
           },
         });
         return;
@@ -100,6 +104,7 @@ export function useKeyboardShortcuts() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
         e.preventDefault();
         setClipboard(selectedId, 'copy');
+        addToast({ type: 'info', message: `Скопійовано «${selectedTask.title}»` });
         return;
       }
 
@@ -107,6 +112,7 @@ export function useKeyboardShortcuts() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
         e.preventDefault();
         setClipboard(selectedId, 'cut');
+        addToast({ type: 'info', message: `Вирізано «${selectedTask.title}»` });
         return;
       }
 
@@ -141,5 +147,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [tasks, clipboardTaskId, clipboardMode]);
+  }, [tasks, clipboardTaskId, clipboardMode, canUndo, canRedo, undo, redo]);
 }
