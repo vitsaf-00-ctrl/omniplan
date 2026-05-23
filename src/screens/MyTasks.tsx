@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
+import { QuickAddBar } from '../components/QuickAddBar';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
@@ -362,6 +363,8 @@ export function MyTasks() {
           </select>
         )}
       </div>
+
+      <QuickAddBar defaultProject={activeProjectFilter || undefined} placeholder="Нова задача на сьогодні..." />
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex-1 overflow-y-auto space-y-5 pr-0.5" onClick={e => e.stopPropagation()}>
