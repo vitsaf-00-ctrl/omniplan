@@ -348,19 +348,53 @@ export function MyTasks() {
             </button>
           ))}
         </div>
-        <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value as Priority | 'all')}
-          className="text-xs font-bold text-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 focus:outline-none">
-          <option value="all">Всі пріоритети</option>
-          <option value="high">Високий</option>
-          <option value="medium">Середній</option>
-          <option value="low">Низький</option>
-        </select>
+        {/* Priority chips */}
+        <div className="flex gap-1">
+          {(['all','high','medium','low'] as const).map(p => {
+            const styles: Record<string, string> = {
+              all: priorityFilter === 'all' ? 'bg-slate-700 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+              high: priorityFilter === 'high' ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400',
+              medium: priorityFilter === 'medium' ? 'bg-amber-400 text-white' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400',
+              low: priorityFilter === 'low' ? 'bg-slate-400 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400',
+            };
+            const dots: Record<string, string> = { high:'bg-rose-500', medium:'bg-amber-400', low:'bg-slate-300' };
+            return (
+              <button key={p} onClick={() => setPriorityFilter(p)}
+                className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all ${styles[p]}`}>
+                {p !== 'all' && <span className={`w-1.5 h-1.5 rounded-full ${priorityFilter === p ? 'bg-white/80' : dots[p]}`}/>}
+                {p === 'all' ? 'Пріоритет' : p === 'high' ? 'Вис.' : p === 'medium' ? 'Сер.' : 'Низ.'}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Project chips */}
         {!activeProjectFilter && (
-          <select value={projectFilter} onChange={e => setProjectFilter(e.target.value)}
-            className="text-xs font-bold text-slate-700 dark:text-white border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-700 focus:outline-none">
-            <option value="all">Всі проєкти</option>
-            {PROJECTS.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-          </select>
+          <div className="flex gap-1 flex-wrap">
+            <button onClick={() => setProjectFilter('all')}
+              className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all ${projectFilter === 'all' ? 'bg-slate-700 text-white dark:bg-slate-300 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}>
+              Всі проєкти
+            </button>
+            {PROJECTS.map(p => {
+              const isActive = projectFilter === p.name;
+              const colorMap: Record<string, { base: string; active: string }> = {
+                blue:    { base: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',       active: 'bg-blue-500 text-white' },
+                indigo:  { base: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400', active: 'bg-indigo-500 text-white' },
+                purple:  { base: 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-400', active: 'bg-purple-500 text-white' },
+                emerald: { base: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400', active: 'bg-emerald-500 text-white' },
+                amber:   { base: 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',   active: 'bg-amber-500 text-white' },
+                rose:    { base: 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400',       active: 'bg-rose-500 text-white' },
+                slate:   { base: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',     active: 'bg-slate-500 text-white' },
+              };
+              const c = colorMap[p.color] || colorMap.slate;
+              return (
+                <button key={p.id} onClick={() => setProjectFilter(isActive ? 'all' : p.name)}
+                  className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all ${isActive ? c.active : c.base + ' hover:opacity-80'}`}>
+                  {p.name}
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
 

@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
-import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check } from 'lucide-react';
+import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check, X } from 'lucide-react';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
-import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
+import { useTaskStore, Task, TaskStatus, Priority, getProjectColor } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
 
@@ -14,6 +14,11 @@ const TAG: Record<string,string> = {
   blue:'bg-blue-100 text-blue-700', indigo:'bg-indigo-100 text-indigo-700',
   purple:'bg-purple-100 text-purple-700', emerald:'bg-emerald-100 text-emerald-700',
   amber:'bg-amber-100 text-amber-700', rose:'bg-rose-100 text-rose-700', slate:'bg-slate-100 text-slate-600',
+};
+const TAG_ACTIVE: Record<string,string> = {
+  blue:'bg-blue-500 text-white', indigo:'bg-indigo-500 text-white',
+  purple:'bg-purple-500 text-white', emerald:'bg-emerald-500 text-white',
+  amber:'bg-amber-500 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-500 text-white',
 };
 const DOT: Record<string,string> = {
   blue:'bg-blue-400', indigo:'bg-indigo-400', purple:'bg-purple-400',
@@ -104,9 +109,11 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
 export function Today() {
   const { getTodayTasks, moveTask, updateTask } = useTaskStore();
   const { setTaskModalOpen, setEditingTask } = useAppStore();
-  const tasks = getTodayTasks();
+  const allTasks = getTodayTasks();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [priorityFilter, setPriorityFilter] = useState<Priority | null>(null);
   const { setSelectedTaskId } = useAppStore();
   const setSelected = (id: string | null) => {
     setSelectedId(id);
@@ -117,13 +124,23 @@ export function Today() {
   const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  const tasks = allTasks.filter(t => {
+    if (projectFilter && t.project !== projectFilter) return false;
+    if (priorityFilter && t.priority !== priorityFilter) return false;
+    return true;
+  });
+
+  // Unique projects from today's tasks (for chips)
+  const todayProjects = [...new Set(allTasks.map(t => t.project))].sort();
+  const hasFilters = todayProjects.length > 1;
+
   const todo = tasks.filter(t => t.status === 'todo');
   const inprog = tasks.filter(t => t.status === 'in_progress');
   const done = tasks.filter(t => t.status === 'done');
 
-  const todayTotal = tasks.length;
-  const todayDone = done.length;
-  const todayInprog = inprog.length;
+  const todayTotal = allTasks.length;
+  const todayDone = allTasks.filter(t => t.status === 'done').length;
+  const todayInprog = allTasks.filter(t => t.status === 'in_progress').length;
   const todayPct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
 
   const toggleExpanded = (id: string) => setExpandedIds(prev => {
@@ -216,9 +233,58 @@ export function Today() {
 
       <QuickAddBar date={TODAY} />
 
+      {/* Filter chips */}
+      {hasFilters && (
+        <div className="flex items-center gap-1.5 mb-2 flex-wrap" onClick={e => e.stopPropagation()}>
+          {todayProjects.map(project => {
+            const color = getProjectColor(project);
+            const isActive = projectFilter === project;
+            return (
+              <button
+                key={project}
+                onClick={() => setProjectFilter(isActive ? null : project)}
+                className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+                  isActive ? TAG_ACTIVE[color] + ' border-transparent' : TAG[color] + ' border-transparent hover:opacity-80'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white/70' : DOT[color]}`}/>
+                {project}
+              </button>
+            );
+          })}
+          <div className="w-px h-4 bg-slate-200 dark:bg-slate-600 mx-0.5"/>
+          {(['high','medium','low'] as Priority[]).map(p => {
+            const colors = { high: { dot:'bg-rose-500', active:'bg-rose-500 text-white', base:'bg-rose-50 text-rose-600' }, medium: { dot:'bg-amber-400', active:'bg-amber-400 text-white', base:'bg-amber-50 text-amber-600' }, low: { dot:'bg-slate-300', active:'bg-slate-400 text-white', base:'bg-slate-100 text-slate-500' } };
+            const c = colors[p];
+            const isActive = priorityFilter === p;
+            return (
+              <button key={p} onClick={() => setPriorityFilter(isActive ? null : p)}
+                className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-full transition-all ${isActive ? c.active : c.base + ' hover:opacity-80'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white/70' : c.dot}`}/>
+                {p === 'high' ? 'Висок.' : p === 'medium' ? 'Серед.' : 'Низьк.'}
+              </button>
+            );
+          })}
+          {(projectFilter || priorityFilter) && (
+            <button onClick={() => { setProjectFilter(null); setPriorityFilter(null); }}
+              className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-600 px-1.5 py-1 rounded-full hover:bg-slate-100 transition-colors">
+              <X className="w-3 h-3"/> Скинути
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Tasks with DnD */}
       <div className="flex-1 overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
-        {tasks.length === 0 && (
+        {tasks.length === 0 && allTasks.length > 0 ? (
+          <div className="text-center py-14">
+            <X className="w-10 h-10 text-slate-100 dark:text-slate-700 mx-auto mb-3"/>
+            <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Нічого не знайдено</p>
+            <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">Змініть або скиньте фільтри</p>
+            <button onClick={() => { setProjectFilter(null); setPriorityFilter(null); }}
+              className="mt-3 text-xs text-indigo-600 font-bold hover:underline">Скинути фільтри</button>
+          </div>
+        ) : tasks.length === 0 && (
           <div className="text-center py-14">
             <Star className="w-14 h-14 text-slate-100 dark:text-slate-700 mx-auto mb-4"/>
             <p className="text-sm font-bold text-slate-400 dark:text-slate-500">На сьогодні задач немає</p>
