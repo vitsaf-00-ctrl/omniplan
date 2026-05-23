@@ -4,7 +4,7 @@ import { useTaskStore } from '../store/useTaskStore';
 import { useUndoRedo } from './useUndoRedo';
 
 export function useKeyboardShortcuts() {
-  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId } = useAppStore();
+  const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId, setConfirmDialog } = useAppStore();
   const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
   const { undo, redo } = useUndoRedo();
   const selectedIdRef = useRef<string | null>(null);
@@ -85,11 +85,14 @@ export function useKeyboardShortcuts() {
       // Delete — видалити
       if (e.key === 'Delete') {
         e.preventDefault();
-        if (window.confirm(`Видалити «${selectedTask.title}»?`)) {
-          deleteTask(selectedId);
-          selectedIdRef.current = null;
-          (window as any).__notifySelectedId?.(null);
-        }
+        setConfirmDialog({
+          message: `Видалити «${selectedTask.title}»?`,
+          onConfirm: () => {
+            deleteTask(selectedId);
+            selectedIdRef.current = null;
+            (window as any).__notifySelectedId?.(null);
+          },
+        });
         return;
       }
 

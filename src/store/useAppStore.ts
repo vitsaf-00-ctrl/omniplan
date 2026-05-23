@@ -5,6 +5,11 @@ import { Task } from './useTaskStore';
 export type ActiveView = 'today' | 'calendar' | 'board' | 'tasks' | 'settings' | 'stats' | 'focus';
 export type Theme = 'light' | 'dark';
 
+interface ConfirmDialog {
+  message: string;
+  onConfirm: () => void;
+}
+
 interface AppState {
   user: User | null;
   isAuthLoaded: boolean;
@@ -18,6 +23,7 @@ interface AppState {
   selectedTaskId: string | null;
   clipboardMode: 'copy' | 'cut' | null;
   focusTaskId: string | null;
+  confirmDialog: ConfirmDialog | null;
 
   setUser: (u: User | null) => void;
   setAuthLoaded: (v: boolean) => void;
@@ -32,6 +38,7 @@ interface AppState {
   clearClipboard: () => void;
   setSelectedTaskId: (id: string | null) => void;
   setFocusTaskId: (id: string | null) => void;
+  setConfirmDialog: (dialog: ConfirmDialog | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -39,6 +46,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeView: 'today', theme: 'light',
   isTaskModalOpen: false, editingTask: null, selectedDate: undefined,
   clipboardTaskId: null, clipboardMode: null, focusTaskId: null, selectedTaskId: null,
+  confirmDialog: null,
 
   setUser: u => set({ user: u }),
   setAuthLoaded: v => set({ isAuthLoaded: v }),
@@ -57,4 +65,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   clearClipboard: () => set({ clipboardTaskId: null, clipboardMode: null }),
   setSelectedTaskId: (id) => set({ selectedTaskId: id }),
   setFocusTaskId: id => set({ focusTaskId: id }),
+  setConfirmDialog: dialog => set({ confirmDialog: dialog }),
 }));

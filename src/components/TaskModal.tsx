@@ -22,6 +22,7 @@ export function TaskModal() {
   const [taskTime, setTaskTime] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
   const [localSubtasks, setLocalSubtasks] = useState<SubTask[]>([]);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
 
   useEffect(() => {
     if (!isTaskModalOpen) return;
@@ -40,6 +41,7 @@ export function TaskModal() {
       setPriority(null); setTaskTime(''); setLocalSubtasks([]);
     }
     setNewSubtask('');
+    setShowUnsavedWarning(false);
   }, [isTaskModalOpen, editingTask, selectedDate]);
 
   const stateRef = useRef({ title, notes, project, status, date, someday, recurring, notifyAtTime, priority, taskTime, localSubtasks, editingTask, isTaskModalOpen });
@@ -71,9 +73,7 @@ export function TaskModal() {
           || taskTime !== ''
           || localSubtasks.length > 0;
       if (hasChanges) {
-        if (window.confirm('Є незбережені зміни. Закрити без збереження?')) {
-          setTaskModalOpen(false); setEditingTask(null);
-        }
+        setShowUnsavedWarning(true);
       } else {
         setTaskModalOpen(false); setEditingTask(null);
       }
@@ -84,7 +84,7 @@ export function TaskModal() {
 
   if (!isTaskModalOpen) return null;
 
-  const close = () => { setTaskModalOpen(false); setEditingTask(null); };
+  const close = () => { setShowUnsavedWarning(false); setTaskModalOpen(false); setEditingTask(null); };
 
   const submit = () => {
     if (!title.trim()) return;
@@ -307,6 +307,27 @@ export function TaskModal() {
             </div>
           </div>
         </div>
+
+        {/* Unsaved changes warning */}
+        {showUnsavedWarning && (
+          <div className="mx-4 mb-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 shrink-0">
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-2">Є незбережені зміни. Закрити без збереження?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={close}
+                className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors"
+              >
+                Закрити
+              </button>
+              <button
+                onClick={() => setShowUnsavedWarning(false)}
+                className="flex-1 py-1.5 rounded-lg text-xs font-bold bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors"
+              >
+                Залишитись
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex gap-2 shrink-0">
