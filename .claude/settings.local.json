@@ -28,7 +28,14 @@
       "Bash(node verify-app.mjs)",
       "Bash(Get-ChildItem -Path \"D:\\\\Claude Projects\\\\omniplan\\\\src\" -Recurse -File)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(Sort-Object)"
+      "Bash(Sort-Object)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash('button:has\\(svg[data-lucide=\\\\\"search\\\\\"]\\)')",
+      "Bash('input[placeholder=\\\\\"Пошук задач...\\\\\"]')",
+      "Bash(node verify-search.mjs)",
+      "Bash(Start-Process *)",
+      "Bash(cmd.exe *)",
+      "Bash(node generate-icons.mjs)"
     ]
   }
 }
