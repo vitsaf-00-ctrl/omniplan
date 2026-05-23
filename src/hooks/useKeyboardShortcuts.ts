@@ -74,10 +74,11 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Space — toggle done
+      // Space — cycle status: todo → in_progress → done → todo
       if (e.key === ' ') {
         e.preventDefault();
-        moveTask(selectedId, selectedTask.status === 'done' ? 'todo' : 'done');
+        const next: Record<string, 'todo' | 'in_progress' | 'done'> = { todo: 'in_progress', in_progress: 'done', done: 'todo' };
+        moveTask(selectedId, next[selectedTask.status] ?? 'todo');
         return;
       }
 

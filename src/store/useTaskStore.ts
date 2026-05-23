@@ -170,7 +170,7 @@ export const useTaskStore = create<TaskStore>()(
     const newTasks = tasks.map(t => ({ ...t, id:`import_${Date.now()}_${nextId++}`, createdAt:new Date() }));
     set(s => ({ tasks: [...s.tasks, ...newTasks] }));
     const { userId } = get();
-    if (userId) Promise.all(newTasks.map(t => fsSetTask(userId, t)));
+    if (userId) Promise.all(newTasks.map(t => fsSetTask(userId, t))).catch(console.error);
   },
 
   addProject: (name) => {

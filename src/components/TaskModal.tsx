@@ -93,7 +93,7 @@ export function TaskModal() {
       date: new Date(date+'T00:00:00'),
       tagColor: getProjectColor(project),
       notes:notes.trim(), recurring, recurringType, someday,
-      notifyAtTime: notifyAtTime && !!taskTime ? true : undefined,
+      notifyAtTime: notifyAtTime || undefined,
       googleCalendarSync:gcal,
       priority: priority || undefined, time: taskTime || undefined,
     };
@@ -135,23 +135,10 @@ export function TaskModal() {
       const tParent = (t as any).recurringParentId as string | undefined;
       const d = new Date(t.date);
       d.setHours(0, 0, 0, 0);
-      return (tParent === parentId || t.id === parentId) && d > today;
+      return tParent === parentId && d > today;
     });
 
     futureCopies.forEach(t => deleteTask(t.id));
-
-    const hasLinkedChildren = futureCopies.some(t => (t as any).recurringParentId === parentId);
-    if (!recurringParentId && !hasLinkedChildren) {
-      const titleNorm = editingTask.title.trim().toLowerCase();
-      tasks
-        .filter(t => {
-          if (t.id === editingTask.id) return false;
-          const d = new Date(t.date);
-          d.setHours(0, 0, 0, 0);
-          return d > today && t.title.trim().toLowerCase() === titleNorm;
-        })
-        .forEach(t => deleteTask(t.id));
-    }
 
     updateTask(parentId, { recurring: false } as any);
     close();

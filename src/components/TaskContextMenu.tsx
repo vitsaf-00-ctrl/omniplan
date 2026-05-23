@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
 
-const TOMORROW = new Date(Date.now() + 86400000);
 
 interface Props {
   x: number;
@@ -18,8 +17,8 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
 
-  const left = Math.min(x, window.innerWidth - 215);
-  const top = Math.min(y, window.innerHeight - 380);
+  const left = Math.max(0, Math.min(x, window.innerWidth - 215));
+  const top = Math.max(0, Math.min(y, window.innerHeight - 380));
 
   const statuses: { v: TaskStatus; l: string; emoji: string }[] = [
     { v: 'todo', l: 'Заплановано', emoji: '⬜' },
@@ -123,7 +122,7 @@ export function TaskContextMenu({ x, y, task, onClose }: Props) {
         </button>
 
         <button
-          onClick={() => { moveTaskToDate(task.id, TOMORROW); onClose(); }}
+          onClick={() => { const tm = new Date(); tm.setDate(tm.getDate() + 1); moveTaskToDate(task.id, tm); onClose(); }}
           className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium"
         >
           ➡️ Перенести на завтра
