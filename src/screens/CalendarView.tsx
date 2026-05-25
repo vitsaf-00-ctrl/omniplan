@@ -433,6 +433,18 @@ export function CalendarView() {
     else setCurrentDate(d=>addDays(d,7));
   };
 
+  // Popup position — calculated before return to keep JSX clean
+  const calPopupStyle = selectedCal ? (() => {
+    const menuH = 38, menuW = 260, margin = 8;
+    const tabBarH = window.innerWidth < 1024 ? 64 : 0;
+    const safeBottom = window.innerHeight - tabBarH - margin;
+    const rawTop = selectedCal.y - menuH > margin ? selectedCal.y - menuH : selectedCal.yBottom + 4;
+    return {
+      top: Math.max(margin, Math.min(rawTop, safeBottom - menuH)),
+      left: Math.min(selectedCal.x, window.innerWidth - menuW - margin),
+    };
+  })() : null;
+
   if (viewMode==='day') return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
@@ -453,22 +465,9 @@ export function CalendarView() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" onClick={() => setSelectedCal(null)}>
       {/* Selected task mini-menu */}
-      {selectedCal && (() => {
-        const menuH = 38;
-        const menuW = 260;
-        const margin = 8;
-        // На мобільному враховуємо MobileTabBar (64px знизу)
-        const tabBarH = window.innerWidth < 1024 ? 64 : 0;
-        const safeBottom = window.innerHeight - tabBarH - margin;
-        // Показати вгору якщо є місце, інакше — вниз від елемента
-        const rawTop = selectedCal.y - menuH > margin
-          ? selectedCal.y - menuH
-          : selectedCal.yBottom + 4;
-        const top = Math.max(margin, Math.min(rawTop, safeBottom - menuH));
-        const left = Math.min(selectedCal.x, window.innerWidth - menuW - margin);
-        return (
+      {selectedCal && calPopupStyle && (
         <div className="fixed z-[200] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex items-stretch overflow-hidden"
-          style={{ left, top }}
+          style={calPopupStyle}
           onClick={e => e.stopPropagation()}>
           <button onClick={() => { moveTask(selectedCal.taskId, selectedCal.task.status === 'done' ? 'todo' : 'done'); setSelectedCal(null); }}
             className="px-3 py-1.5 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors whitespace-nowrap">
@@ -485,8 +484,7 @@ export function CalendarView() {
             ✕
           </button>
         </div>
-        );
-      })()}
+      )}
       {/* Header */}
       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-1.5">
@@ -556,7 +554,7 @@ export function CalendarView() {
           return (
             <DragDropContext onDragEnd={onWeekDragEnd}>
               <div className="flex-1 overflow-auto">
-                <div className="grid" style={{gridTemplateColumns:'repeat(7, minmax(180px, 1fr))'}}>
+                <div className="grid" style={{gridTemplateColumns:'repeat(7, minmax(100px, 1fr))'}}>
                   {weekDays.map((day, i) => {
                     const isToday = isSameDay(day, TODAY);
                     const dayTasks = getWeekColTasks(day);
@@ -599,7 +597,7 @@ export function CalendarView() {
       ) : (
         // MONTH — weekdays 2fr, weekends 1fr
         <div className="flex-1 overflow-auto">
-          <div className="grid min-w-[360px]" style={{gridTemplateColumns:'repeat(5, 2fr) 1fr 1fr'}}>
+          <div className="grid w-full" style={{gridTemplateColumns:'repeat(5, 2fr) 1fr 1fr'}}>
             {(['Пн','Вт','Ср','Чт','Пт','Сб','Нд'] as const).map((l,i)=>{
               const isWknd = i >= 5;
               return (
@@ -622,8 +620,8 @@ export function CalendarView() {
                   onClick={()=>{ setSelectedCal(null); selectDay(day); }}
                   className={`border-b border-r border-slate-200 dark:border-slate-700 flex flex-col cursor-pointer group transition-colors
                     ${isWknd
-                      ? 'p-1 min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
-                      : 'p-1.5 min-h-[80px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
+                      ? 'p-1 min-h-[40px] sm:min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
+                      : 'p-1.5 min-h-[60px] sm:min-h-[80px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
                     }
                     ${!isCurMonth?'opacity-40':''}
                     ${isToday?'ring-2 ring-inset ring-indigo-500':''}
