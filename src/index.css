@@ -8,3 +8,7 @@
 
 /* Dark mode support */
 @variant dark (&:where(.dark, .dark *));
+
+/* Hide scrollbar but keep scroll functionality */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

@@ -368,12 +368,12 @@ export function MyTasks() {
           })}
         </div>
 
-        {/* Project chips */}
+        {/* Project chips — horizontal scroll on mobile */}
         {!activeProjectFilter && (
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 overflow-x-auto pb-0.5 no-scrollbar w-full">
             <button onClick={() => setProjectFilter('all')}
-              className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all ${projectFilter === 'all' ? 'bg-slate-700 text-white dark:bg-slate-300 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}>
-              Всі проєкти
+              className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all shrink-0 ${projectFilter === 'all' ? 'bg-slate-700 text-white dark:bg-slate-300 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}>
+              Всі
             </button>
             {PROJECTS.map(p => {
               const isActive = projectFilter === p.name;
@@ -389,7 +389,7 @@ export function MyTasks() {
               const c = colorMap[p.color] || colorMap.slate;
               return (
                 <button key={p.id} onClick={() => setProjectFilter(isActive ? 'all' : p.name)}
-                  className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all ${isActive ? c.active : c.base + ' hover:opacity-80'}`}>
+                  className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all shrink-0 ${isActive ? c.active : c.base + ' hover:opacity-80'}`}>
                   {p.name}
                 </button>
               );
