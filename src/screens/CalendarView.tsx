@@ -48,7 +48,7 @@ type Ctx = { x: number; y: number; task: Task };
 
 
 function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
-  task: Task; dayTs: number; isSelected: boolean; onSelect: (x: number, y: number) => void;
+  task: Task; dayTs: number; isSelected: boolean; onSelect: (x: number, y: number, yBottom: number) => void;
 }) {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
@@ -60,7 +60,7 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
         draggable
         onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); }}
         onDoubleClick={e => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); }}
-        onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onSelect(r.left, r.top); }}
+        onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onSelect(r.left, r.top, r.bottom); }}
         onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtx({x:e.clientX,y:e.clientY,task}); }}
         title={task.title}
         className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 transition-all
@@ -349,7 +349,7 @@ export function CalendarView() {
   const [weekOrder, setWeekOrder] = useState<Record<number, string[]>>({});
   const [monthDayOrder, setMonthDayOrder] = useState<Record<number, string[]>>({});
   const [dragOverInfo, setDragOverInfo] = useState<{dayTs: number; taskId: string} | null>(null);
-  const [selectedCal, setSelectedCal] = useState<{taskId: string; task: Task; x: number; y: number} | null>(null);
+  const [selectedCal, setSelectedCal] = useState<{taskId: string; task: Task; x: number; y: number; yBottom: number} | null>(null);
 
   const { getTasksForDay, moveTask, activeProjectFilter } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate, clipboardTaskId, clipboardMode, clearClipboard } = useAppStore();
@@ -453,9 +453,22 @@ export function CalendarView() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden" onClick={() => setSelectedCal(null)}>
       {/* Selected task mini-menu */}
-      {selectedCal && (
+      {selectedCal && (() => {
+        const menuH = 38;
+        const menuW = 260;
+        const margin = 8;
+        // На мобільному враховуємо MobileTabBar (64px знизу)
+        const tabBarH = window.innerWidth < 1024 ? 64 : 0;
+        const safeBottom = window.innerHeight - tabBarH - margin;
+        // Показати вгору якщо є місце, інакше — вниз від елемента
+        const rawTop = selectedCal.y - menuH > margin
+          ? selectedCal.y - menuH
+          : selectedCal.yBottom + 4;
+        const top = Math.max(margin, Math.min(rawTop, safeBottom - menuH));
+        const left = Math.min(selectedCal.x, window.innerWidth - menuW - margin);
+        return (
         <div className="fixed z-[200] bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 flex items-stretch overflow-hidden"
-          style={{left: Math.min(selectedCal.x, window.innerWidth - 210), top: Math.max(selectedCal.y - 46, 8)}}
+          style={{ left, top }}
           onClick={e => e.stopPropagation()}>
           <button onClick={() => { moveTask(selectedCal.taskId, selectedCal.task.status === 'done' ? 'todo' : 'done'); setSelectedCal(null); }}
             className="px-3 py-1.5 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors whitespace-nowrap">
@@ -472,7 +485,8 @@ export function CalendarView() {
             ✕
           </button>
         </div>
-      )}
+        );
+      })()}
       {/* Header */}
       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/50 shrink-0">
         <div className="flex items-center gap-1.5">
@@ -644,7 +658,7 @@ export function CalendarView() {
                         )}
                         <MonthTaskDot task={t} dayTs={dayTs}
                           isSelected={selectedCal?.taskId===t.id}
-                          onSelect={(x,y)=>setSelectedCal(prev => prev?.taskId===t.id ? null : {taskId:t.id, task:t, x, y})}/>
+                          onSelect={(x,y,yBottom)=>setSelectedCal(prev => prev?.taskId===t.id ? null : {taskId:t.id, task:t, x, y, yBottom})}/>
                       </div>
                     ))}
                   </div>
