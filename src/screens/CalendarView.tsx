@@ -54,21 +54,34 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
   const pill = isDone ? PILL_DONE : isIP ? PILL_IP : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
+  const DOT: Record<string,string> = {
+    blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
+    emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
+  };
+  const dotCls = isDone ? 'bg-slate-300 opacity-60' : isIP ? 'bg-amber-400' : (DOT[task.tagColor] || DOT.slate);
+
+  const handleDrag = (e: React.DragEvent) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); };
+  const handleDbl  = (e: React.MouseEvent) => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); };
+  const handleClick = (e: React.MouseEvent) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onSelect(r.left, r.top, r.bottom); };
+  const handleCtx  = (e: React.MouseEvent) => { e.preventDefault(); e.stopPropagation(); setCtx({x:e.clientX,y:e.clientY,task}); };
+
   return (
     <>
-      <div
-        draggable
-        onDragStart={e => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); }}
-        onDoubleClick={e => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); }}
-        onClick={e => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onSelect(r.left, r.top, r.bottom); }}
-        onContextMenu={e => { e.preventDefault(); e.stopPropagation(); setCtx({x:e.clientX,y:e.clientY,task}); }}
-        title={task.title}
-        className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold truncate cursor-pointer select-none flex items-center gap-1 transition-all
+      {/* Mobile: colored dot only — keeps cells clean on narrow screens */}
+      <div draggable onDragStart={handleDrag} onDoubleClick={handleDbl}
+        onClick={handleClick} onContextMenu={handleCtx} title={task.title}
+        className={`sm:hidden w-2.5 h-2.5 rounded-full cursor-pointer shrink-0 transition-all ${dotCls}
+          ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-1 scale-125' : ''}`}
+      />
+      {/* Desktop: full pill with truncated title */}
+      <div draggable onDragStart={handleDrag} onDoubleClick={handleDbl}
+        onClick={handleClick} onContextMenu={handleCtx} title={task.title}
+        className={`hidden sm:flex px-1.5 py-0.5 rounded-md text-[10px] font-bold cursor-pointer select-none items-center gap-1 transition-all min-w-0
           ${isSelected ? 'ring-4 ring-indigo-600 shadow-lg bg-indigo-100 text-indigo-900' : pill}`}
       >
         {isIP && <Clock className="w-2.5 h-2.5 shrink-0 animate-pulse"/>}
         {task.recurring && <Repeat className="w-2.5 h-2.5 shrink-0 opacity-70"/>}
-        <span className="truncate">{task.title}</span>
+        <span className="truncate min-w-0 flex-1">{task.title}</span>
       </div>
       {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
     </>
@@ -129,7 +142,7 @@ function WeekTaskCard({ task }: { task:Task }) {
           {isDone?<CheckCircle2 className="w-4 h-4 text-emerald-500"/>:isIP?<Clock className="w-4 h-4 text-amber-500 animate-pulse"/>:<Circle className="w-4 h-4 text-slate-300"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor]||'bg-slate-400'}`}/>
-        <p className={`text-xs font-medium flex-1 truncate ${isDone?'line-through text-slate-400':isIP?'text-amber-800':'text-slate-700 dark:text-slate-200'}`}>{task.title}</p>
+        <p className={`text-[13px] sm:text-xs font-medium flex-1 truncate ${isDone?'line-through text-slate-400':isIP?'text-amber-800':'text-slate-700 dark:text-slate-200'}`}>{task.title}</p>
         {task.recurring&&<Repeat className="w-2.5 h-2.5 text-slate-300 shrink-0"/>}
       </div>
       {ctx&&<TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={()=>setCtx(null)}/>}
@@ -216,6 +229,19 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
     return (h - TL_START) * HOUR_PX + (m / 60) * HOUR_PX;
   };
 
+  // Sort and assign 2-column layout to avoid timed task visual overlap
+  const validTimed = timed
+    .filter(t => { const h = parseInt((t.time||'').split(':')[0], 10); return !isNaN(h) && h >= TL_START && h <= TL_END; })
+    .sort((a, b) => timeToTop(a.time!) - timeToTop(b.time!));
+  const colEnds = [0, 0];
+  const timedLayout = validTimed.map(t => {
+    const top = timeToTop(t.time!);
+    const col = colEnds[0] <= top ? 0 : (colEnds[1] <= top ? 1 : 0);
+    colEnds[col] = top + 44;
+    return { t, top, col };
+  });
+  const hasTwoCols = timedLayout.some(x => x.col === 1);
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Day navigation header */}
@@ -232,10 +258,10 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
         </div>
       </div>
 
-      {/* "Без часу" strip */}
+      {/* "Без часу" strip — visually separated from the timed timeline below */}
       {timeless.length > 0 && (
-        <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-900/30 px-4 py-2">
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Без часу</p>
+        <div className="shrink-0 border-b-2 border-slate-300 dark:border-slate-600 bg-slate-100/90 dark:bg-slate-900/50 px-4 py-2.5">
+          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Без часу</p>
           <div className="flex flex-wrap gap-1">
             {timeless.map(t => (
               <div key={t.id}
@@ -277,18 +303,16 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
               <div key={`half-${h}`} className="absolute w-full border-t border-dashed border-slate-50 dark:border-slate-700/20"
                 style={{top:`${(h - TL_START) * HOUR_PX + HOUR_PX / 2}px`}}/>
             ))}
-            {timed.map(t => {
-              const timeStr = t.time || '';
-              const [h] = timeStr.split(':').map(Number);
-              if (!timeStr || h < TL_START || h > TL_END) return null;
-              const top = timeToTop(timeStr);
-              const col = TL_COLORS[t.tagColor] || TL_COLORS.slate;
+            {timedLayout.map(({ t, top, col }) => {
+              const colCls = TL_COLORS[t.tagColor] || TL_COLORS.slate;
               const isDone = t.status === 'done';
+              const leftPx  = col === 0 ? '8px' : 'calc(50% + 2px)';
+              const rightPx = col === 0 ? (hasTwoCols ? 'calc(50% + 2px)' : '8px') : '8px';
               return (
                 <div key={t.id}
                   onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
-                  className={`absolute left-2 right-2 rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${col} ${isDone ? 'opacity-50' : ''}`}
-                  style={{top:`${top}px`, minHeight:'44px', zIndex:1}}>
+                  className={`absolute rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${colCls} ${isDone ? 'opacity-50' : ''}`}
+                  style={{top:`${top}px`, minHeight:'44px', zIndex:1, left:leftPx, right:rightPx}}>
                   <p className={`text-xs font-bold leading-tight ${isDone ? 'line-through' : ''}`}>{t.title}</p>
                   <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time} · {t.project}</p>
                   {t.subtasks && t.subtasks.length > 0 && (
@@ -553,7 +577,30 @@ export function CalendarView() {
           };
           return (
             <DragDropContext onDragEnd={onWeekDragEnd}>
-              <div className="flex-1 overflow-auto">
+              {/* Mobile: vertical day list — each day is a collapsible section */}
+              <div className="sm:hidden flex-1 overflow-auto pb-20">
+                {weekDays.map((day, i) => {
+                  const isToday = isSameDay(day, TODAY);
+                  const dayTasks = getWeekColTasks(day);
+                  return (
+                    <div key={i} className={`border-b border-slate-200 dark:border-slate-700 ${isToday ? 'bg-indigo-50/40 dark:bg-indigo-900/10' : ''}`}>
+                      <div className="px-3 py-2.5 flex items-center gap-2 cursor-pointer" onClick={() => selectDay(day)}>
+                        <span className={`text-sm font-black capitalize ${isToday ? 'text-indigo-600' : 'text-slate-700 dark:text-white'}`}>
+                          {format(day, 'EEEE', {locale: uk})}
+                        </span>
+                        <span className={`text-xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-400 dark:text-slate-500'}`}>{format(day, 'd')}</span>
+                        {dayTasks.length > 0 && <span className="text-xs text-slate-400 ml-auto">{dayTasks.length} завд.</span>}
+                      </div>
+                      <div className="px-2 pb-2">
+                        {dayTasks.map(t => <WeekTaskCard key={t.id} task={t}/>)}
+                        {dayTasks.length === 0 && <p className="px-2 pb-1 text-xs text-slate-300 dark:text-slate-600">Немає задач</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: 7-column drag-and-drop grid */}
+              <div className="hidden sm:block flex-1 overflow-auto">
                 <div className="grid" style={{gridTemplateColumns:'repeat(7, minmax(100px, 1fr))'}}>
                   {weekDays.map((day, i) => {
                     const isToday = isSameDay(day, TODAY);
@@ -644,7 +691,7 @@ export function CalendarView() {
                       )}
                     </div>
                   </div>
-                  <div className="flex-1 space-y-px overflow-hidden">
+                  <div className="flex-1 overflow-hidden flex flex-wrap gap-0.5 sm:block sm:space-y-px">
                     {dayTasks.map(t=>(
                       <div key={t.id}
                         onDragOver={e=>{ e.preventDefault(); e.stopPropagation(); setDragOverInfo({dayTs, taskId: t.id}); }}
@@ -652,7 +699,7 @@ export function CalendarView() {
                         onDrop={e=>handleMonthTaskDrop(e, day, t.id)}
                         onClick={e=>e.stopPropagation()}>
                         {dragOverInfo?.dayTs===dayTs && dragOverInfo.taskId===t.id && (
-                          <div className="h-0.5 bg-indigo-500 rounded-full"/>
+                          <div className="hidden sm:block h-0.5 bg-indigo-500 rounded-full"/>
                         )}
                         <MonthTaskDot task={t} dayTs={dayTs}
                           isSelected={selectedCal?.taskId===t.id}
