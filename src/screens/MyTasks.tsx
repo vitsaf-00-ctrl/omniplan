@@ -74,7 +74,7 @@ function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'}`}/>
       )}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold truncate ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+        <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
           {task.title}
         </p>
         {subtasks.length > 0 && (

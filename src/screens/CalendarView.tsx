@@ -229,6 +229,11 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
     return (h - TL_START) * HOUR_PX + (m / 60) * HOUR_PX;
   };
 
+  const TL_DOT: Record<string,string> = {
+    blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
+    emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
+  };
+
   // Sort and assign 2-column layout to avoid timed task visual overlap
   const validTimed = timed
     .filter(t => { const h = parseInt((t.time||'').split(':')[0], 10); return !isNaN(h) && h >= TL_START && h <= TL_END; })
@@ -258,9 +263,57 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
         </div>
       </div>
 
-      {/* "Без часу" strip — visually separated from the timed timeline below */}
+      {/* Mobile: simple sorted list — no grid, just time + title + project */}
+      <div className="sm:hidden flex-1 overflow-y-auto pb-20">
+        <button onClick={() => selectDay(day)}
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 w-full">
+          <Plus className="w-3.5 h-3.5"/> Додати задачу
+        </button>
+        {timeless.length > 0 && (
+          <div className="border-b-2 border-slate-300 dark:border-slate-600 bg-slate-100/90 dark:bg-slate-900/50 px-4 py-2.5">
+            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Без часу</p>
+            {timeless.map(t => (
+              <div key={t.id} onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
+                className="flex items-center gap-3 py-2.5 border-b border-slate-200 dark:border-slate-700 last:border-0 cursor-pointer">
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${TL_DOT[t.tagColor]||'bg-slate-400'}`}/>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-slate-800 dark:text-white line-clamp-2">{t.title}</p>
+                  <p className="text-xs text-slate-400">{t.project}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {validTimed.length > 0 && (
+          <div className="px-4 pt-2">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">З часом</p>
+            {validTimed.map(t => {
+              const isDone = t.status === 'done';
+              return (
+                <div key={t.id} onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
+                  className={`flex items-start gap-3 py-2.5 border-b border-slate-100 dark:border-slate-700 cursor-pointer ${isDone ? 'opacity-50' : ''}`}>
+                  <span className="text-xs font-bold text-slate-400 w-10 shrink-0 pt-0.5 tabular-nums">{t.time}</span>
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${TL_DOT[t.tagColor]||'bg-slate-400'}`}/>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] font-semibold line-clamp-2 ${isDone ? 'line-through text-slate-400' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
+                    <p className="text-xs text-slate-400">{t.project}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {validTimed.length === 0 && timeless.length === 0 && (
+          <div className="text-center py-16">
+            <p className="text-sm font-bold text-slate-400 dark:text-slate-500">Немає задач на цей день</p>
+            <button onClick={() => selectDay(day)} className="mt-3 text-xs font-bold text-indigo-600 hover:underline">Додати задачу</button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: "Без часу" strip + timeline grid */}
       {timeless.length > 0 && (
-        <div className="shrink-0 border-b-2 border-slate-300 dark:border-slate-600 bg-slate-100/90 dark:bg-slate-900/50 px-4 py-2.5">
+        <div className="hidden sm:block shrink-0 border-b-2 border-slate-300 dark:border-slate-600 bg-slate-100/90 dark:bg-slate-900/50 px-4 py-2.5">
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Без часу</p>
           <div className="flex flex-wrap gap-1">
             {timeless.map(t => (
@@ -273,17 +326,13 @@ function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; on
           </div>
         </div>
       )}
-
-      {/* Add task shortcut */}
-      <div className="shrink-0 px-4 py-2 border-b border-slate-100 dark:border-slate-700">
+      <div className="hidden sm:block shrink-0 px-4 py-2 border-b border-slate-100 dark:border-slate-700">
         <button onClick={() => selectDay(day)}
           className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors">
           <Plus className="w-3.5 h-3.5"/> Додати задачу
         </button>
       </div>
-
-      {/* Scrollable timeline — single day */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="hidden sm:block flex-1 overflow-y-auto">
         <div className="flex" style={{height:`${TL_HOURS * HOUR_PX}px`}}>
           <div className="w-14 shrink-0 relative select-none">
             {hours.map(h => (
@@ -474,8 +523,9 @@ export function CalendarView() {
       <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
         <div className="flex bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
           {(['month','week','timeline','day'] as const).map(m=>(
-            <button key={m} onClick={()=>setViewMode(m)} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
-              {m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}
+            <button key={m} onClick={()=>setViewMode(m)} className={`px-1.5 sm:px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
+              <span className="sm:hidden">{m==='month'?'М':m==='week'?'Т':m==='timeline'?'⏱':'Д'}</span>
+              <span className="hidden sm:inline">{m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}</span>
             </button>
           ))}
         </div>
@@ -523,8 +573,9 @@ export function CalendarView() {
           <div className="flex bg-slate-100 dark:bg-slate-700 p-0.5 rounded-lg">
             {(['month','week','timeline','day'] as const).map(m=>(
               <button key={m} onClick={()=>{ setViewMode(m); if(m==='day'||m==='timeline') setDayDate(TODAY); if(m==='week') setCurrentDate(TODAY); }}
-                className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
-                {m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}
+                className={`px-1.5 sm:px-2 py-1 text-[10px] font-bold rounded-md transition-all ${viewMode===m?'bg-white dark:bg-slate-900 text-indigo-600 shadow-sm':'text-slate-500'}`}>
+                <span className="sm:hidden">{m==='month'?'М':m==='week'?'Т':m==='timeline'?'⏱':'Д'}</span>
+                <span className="hidden sm:inline">{m==='month'?'Місяць':m==='week'?'Тиждень':m==='timeline'?'Таймлайн':'День'}</span>
               </button>
             ))}
           </div>
@@ -667,8 +718,8 @@ export function CalendarView() {
                   onClick={()=>{ setSelectedCal(null); selectDay(day); }}
                   className={`border-b border-r border-slate-200 dark:border-slate-700 flex flex-col cursor-pointer group transition-colors
                     ${isWknd
-                      ? 'p-1 min-h-[40px] sm:min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
-                      : 'p-1.5 min-h-[60px] sm:min-h-[80px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
+                      ? 'p-1 min-h-[52px] sm:min-h-[60px] bg-slate-50/80 dark:bg-slate-900/20 hover:bg-slate-100/80 dark:hover:bg-slate-800/20'
+                      : 'p-1.5 min-h-[72px] sm:min-h-[80px] hover:bg-slate-50/50 dark:hover:bg-slate-800/30'
                     }
                     ${!isCurMonth?'opacity-40':''}
                     ${isToday?'ring-2 ring-inset ring-indigo-500':''}

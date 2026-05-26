@@ -75,7 +75,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'}`}/>
         )}
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold truncate ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-200' : 'text-slate-800 dark:text-white'}`}>{task.title}</p>
+          <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-200' : 'text-slate-800 dark:text-white'}`}>{task.title}</p>
           {hasSubtasks && (
             <p className="text-[10px] text-slate-400 mt-0.5">✓ {task.subtasks!.filter(s => s.done).length}/{task.subtasks!.length} підзадач</p>
           )}
@@ -202,15 +202,34 @@ export function Today() {
     <div className="flex flex-col h-full overflow-hidden" onClick={() => setSelectedId(null)}>
       {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
 
-      {/* Hero header */}
-      <div className={`bg-gradient-to-br ${grad} rounded-2xl p-4 mb-3 text-white relative overflow-hidden shrink-0`}>
+      {/* Mobile: compact hero — title + 2 key stats in one row */}
+      <div className={`sm:hidden bg-gradient-to-br ${grad} rounded-xl px-4 py-3 mb-3 text-white shrink-0`}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider capitalize">{dayName}</p>
+            <h1 className="text-xl font-black leading-tight">Мій день</h1>
+            <p className="text-white/60 text-xs capitalize truncate">{dayFull}</p>
+          </div>
+          <div className="flex gap-4 shrink-0">
+            <div className="text-center">
+              <p className="text-2xl font-black leading-none">{todayDone}<span className="text-sm text-white/60 font-bold">/{todayTotal}</span></p>
+              <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Виконано</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black leading-none">{todayPct}%</p>
+              <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Дня</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Desktop: full hero with 4 KPI cards */}
+      <div className={`hidden sm:block bg-gradient-to-br ${grad} rounded-2xl p-4 mb-3 text-white relative overflow-hidden shrink-0`}>
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-2 right-4 text-8xl font-black text-white/20">{format(TODAY,'d')}</div>
         </div>
         <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-1 capitalize">{dayName}</p>
         <h1 className="text-2xl font-black mb-1">Мій день</h1>
         <p className="text-white/80 text-sm font-medium capitalize">{dayFull}</p>
-
         <div className="grid grid-cols-4 gap-1.5 mt-3">
           <div className="bg-white/20 rounded-lg px-1 py-1.5 text-center">
             <p className="text-base font-black">{todayTotal}</p>
