@@ -597,7 +597,7 @@ export function CalendarView() {
       ) : (
         // MONTH — weekdays 2fr, weekends 1fr
         <div className="flex-1 overflow-auto">
-          <div className="grid w-full" style={{gridTemplateColumns:'repeat(5, 2fr) 1fr 1fr'}}>
+          <div className="grid w-full pb-20 lg:pb-4" style={{gridTemplateColumns:'repeat(5, 2fr) 1fr 1fr'}}>
             {(['Пн','Вт','Ср','Чт','Пт','Сб','Нд'] as const).map((l,i)=>{
               const isWknd = i >= 5;
               return (
