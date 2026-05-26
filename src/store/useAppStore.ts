@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { User } from 'firebase/auth';
 import { Task } from './useTaskStore';
 
-export type ActiveView = 'today' | 'calendar' | 'board' | 'tasks' | 'settings' | 'stats' | 'focus';
+export type ActiveView = 'today' | 'calendar' | 'board' | 'tasks' | 'settings' | 'stats' | 'focus' | 'timeline';
 export type Theme = 'light' | 'dark';
 
 interface ConfirmDialog {

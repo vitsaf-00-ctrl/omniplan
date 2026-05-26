@@ -208,7 +208,7 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
   );
 }
 
-function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; onNext: ()=>void }) {
+export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; onNext: ()=>void }) {
   const { getTasksForDay } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
 

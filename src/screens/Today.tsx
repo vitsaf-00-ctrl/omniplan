@@ -123,6 +123,8 @@ export function Today() {
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const tasks = allTasks.filter(t => {
     if (projectFilter && t.project !== projectFilter) return false;
@@ -202,22 +204,30 @@ export function Today() {
     <div className="flex flex-col h-full overflow-hidden" onClick={() => setSelectedId(null)}>
       {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
 
-      {/* Mobile: compact hero — title + 2 key stats in one row */}
-      <div className={`sm:hidden bg-gradient-to-br ${grad} rounded-xl px-4 py-3 mb-3 text-white shrink-0`}>
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider capitalize">{dayName}</p>
-            <h1 className="text-xl font-black leading-tight">Мій день</h1>
-            <p className="text-white/60 text-xs capitalize truncate">{dayFull}</p>
-          </div>
-          <div className="flex gap-4 shrink-0">
-            <div className="text-center">
-              <p className="text-2xl font-black leading-none">{todayDone}<span className="text-sm text-white/60 font-bold">/{todayTotal}</span></p>
-              <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Виконано</p>
+      {/* Mobile: collapsible hero — collapses to single line after scrolling 50px */}
+      <div className={`sm:hidden bg-gradient-to-br ${grad} rounded-xl px-4 mb-3 text-white shrink-0 transition-all duration-300 ease-in-out overflow-hidden ${headerCollapsed ? 'py-2.5' : 'py-3'}`}>
+        {/* Collapsed: one-line summary */}
+        <div className={`flex items-center justify-between transition-all duration-300 overflow-hidden ${headerCollapsed ? 'max-h-8 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+          <span className="text-sm font-semibold capitalize">{format(TODAY,'d MMM',{locale:uk})} · {dayName}</span>
+          <span className="text-sm font-bold">{todayTotal} завд. · {todayPct}%</span>
+        </div>
+        {/* Full: title + date + 2 stats */}
+        <div className={`transition-all duration-300 overflow-hidden ${headerCollapsed ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-40 opacity-100'}`}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-white/60 text-[10px] font-bold uppercase tracking-wider capitalize">{dayName}</p>
+              <h1 className="text-xl font-black leading-tight">Мій день</h1>
+              <p className="text-white/60 text-xs capitalize truncate">{dayFull}</p>
             </div>
-            <div className="text-center">
-              <p className="text-2xl font-black leading-none">{todayPct}%</p>
-              <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Дня</p>
+            <div className="flex gap-4 shrink-0">
+              <div className="text-center">
+                <p className="text-2xl font-black leading-none">{todayDone}<span className="text-sm text-white/60 font-bold">/{todayTotal}</span></p>
+                <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Виконано</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-black leading-none">{todayPct}%</p>
+                <p className="text-[9px] text-white/60 uppercase font-bold mt-0.5">Дня</p>
+              </div>
             </div>
           </div>
         </div>
@@ -294,7 +304,9 @@ export function Today() {
       )}
 
       {/* Tasks with DnD */}
-      <div className="flex-1 overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
+      <div ref={scrollRef}
+        onScroll={() => setHeaderCollapsed((scrollRef.current?.scrollTop ?? 0) > 50)}
+        className="flex-1 overflow-y-auto space-y-4" onClick={e => e.stopPropagation()}>
         {tasks.length === 0 && allTasks.length > 0 ? (
           <div className="text-center py-14">
             <X className="w-10 h-10 text-slate-100 dark:text-slate-700 mx-auto mb-3"/>

@@ -9,6 +9,7 @@ import { Settings } from './Settings';
 import { Today } from './Today';
 import { Statistics } from './Statistics';
 import { FocusMode } from './FocusMode';
+import { TimelineScreen } from './TimelineScreen';
 import { TaskModal } from '../components/TaskModal';
 import { SearchOverlay } from '../components/SearchOverlay';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -30,6 +31,7 @@ export function Dashboard() {
         <div className="flex-1 p-3 md:p-5 overflow-hidden relative pb-16 lg:pb-0">
           {activeView === 'today'    && <Today/>}
           {activeView === 'calendar' && <CalendarView/>}
+          {activeView === 'timeline' && <TimelineScreen/>}
           {activeView === 'board'    && <ProjectBoard/>}
           {activeView === 'tasks'    && <MyTasks/>}
           {activeView === 'settings' && <Settings/>}

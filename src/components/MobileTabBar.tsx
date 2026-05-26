@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Sun, Calendar, Columns, CheckSquare, MoreHorizontal, BarChart2, Target, Settings, X } from 'lucide-react';
+import { Sun, Calendar, Columns, CheckSquare, MoreHorizontal, BarChart2, Target, Settings, X, Clock } from 'lucide-react';
 import { useAppStore, ActiveView } from '../store/useAppStore';
 
 const MAIN_TABS: { view: ActiveView; icon: typeof Sun; label: string }[] = [
   { view: 'today', icon: Sun, label: 'День' },
   { view: 'calendar', icon: Calendar, label: 'Календар' },
   { view: 'board', icon: Columns, label: 'Дошка' },
-  { view: 'tasks', icon: CheckSquare, label: 'Завдання' },
+  { view: 'timeline', icon: Clock, label: 'Таймлайн' },
 ];
 
 const MORE_ITEMS: { view: ActiveView; icon: typeof BarChart2; label: string; desc: string }[] = [
+  { view: 'tasks', icon: CheckSquare, label: 'Завдання', desc: 'Всі задачі та проєкти' },
   { view: 'stats', icon: BarChart2, label: 'Статистика', desc: 'Аналітика та графіки' },
   { view: 'focus', icon: Target, label: 'Фокус', desc: 'Pomodoro таймер' },
   { view: 'settings', icon: Settings, label: 'Налаштування', desc: 'Профіль та вигляд' },
@@ -19,7 +20,7 @@ export function MobileTabBar() {
   const { activeView, setActiveView } = useAppStore();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const isMoreActive = ['stats', 'focus', 'settings'].includes(activeView);
+  const isMoreActive = ['tasks', 'stats', 'focus', 'settings'].includes(activeView);
 
   return (
     <>
