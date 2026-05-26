@@ -19,56 +19,91 @@ const DOT: Record<string,string> = {
 
 type Ctx = { x: number; y: number; task: Task };
 
-function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
+function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, noDrag = false }: {
   task: Task;
   isSelected: boolean;
   onSelect: () => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
+  noDrag?: boolean;
 }) {
   const isIP = task.status === 'in_progress';
   const sub = task.subtasks || [], subDone = sub.filter(s => s.done).length;
+  const cardCls = `rounded-xl shadow-sm border-b-2 transition-all cursor-pointer select-none
+    ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-b-amber-400 ring-2 ring-amber-300/30'
+      : task.status === 'done' ? 'bg-slate-50 dark:bg-slate-800/50 border-b-emerald-400 opacity-70'
+      : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-b-indigo-400 ring-2 ring-indigo-200'
+      : 'bg-white dark:bg-slate-800 border-b-indigo-200 hover:shadow-md'}`;
   return (
     <div
       onContextMenu={e => { e.preventDefault(); onContextMenu(e); }}
       onClick={onSelect}
       onDoubleClick={onDoubleClick}
-      style={{ touchAction: 'none' }}
-      className={`p-3 rounded-xl shadow-sm border-b-2 transition-all cursor-pointer select-none
-        ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-b-amber-400 ring-2 ring-amber-300/30'
-          : task.status === 'done' ? 'bg-slate-50 dark:bg-slate-800/50 border-b-emerald-400 opacity-70'
-          : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-b-indigo-400 ring-2 ring-indigo-200'
-          : 'bg-white dark:bg-slate-800 border-b-indigo-200 hover:shadow-md'}`}
+      style={{ touchAction: noDrag ? 'pan-y' : 'none' }}
+      className={cardCls}
     >
-      <div className="flex items-center gap-1.5 mb-1.5">
-        {task.status === 'done' ? <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
-          : isIP ? <Clock className="w-3 h-3 text-amber-500 animate-pulse"/>
-          : <Circle className="w-3 h-3 text-slate-300"/>}
-        <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
-          {task.status === 'done' ? 'ГОТОВО' : isIP ? 'В ПРОЦЕСІ' : 'ЗАПЛАНОВАНО'}
-        </span>
-        {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300"/>}
-        <button
-          onClick={e => { e.stopPropagation(); onContextMenu(e); }}
-          className="p-0.5 rounded text-slate-200 hover:text-slate-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-          <MoreVertical className="w-3.5 h-3.5"/>
-        </button>
-        <GripVertical className="w-3 h-3 text-slate-200 opacity-50"/>
-      </div>
-      <p className={`text-sm font-semibold mb-2 leading-snug ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
-        {task.title}
-      </p>
-      {sub.length > 0 && (
-        <div className="flex items-center gap-1.5 mb-2">
-          <div className="h-1 bg-slate-100 rounded-full overflow-hidden flex-1">
-            <div className="h-full bg-emerald-500 rounded-full" style={{width:`${Math.round((subDone/sub.length)*100)}%`}}/>
+      {/* Mobile: compact 2-row layout, no status label, no grip */}
+      <div className="md:hidden px-3 py-2.5">
+        <div className="flex items-start gap-2.5">
+          <div className="shrink-0 mt-0.5">
+            {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500"/>
+              : isIP ? <Clock className="w-4 h-4 text-amber-500 animate-pulse"/>
+              : <Circle className="w-4 h-4 text-slate-300"/>}
           </div>
-          <span className="text-[9px] text-slate-400 font-bold">{subDone}/{sub.length}</span>
+          <p className={`flex-1 text-sm font-semibold leading-snug min-w-0 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+            {task.title}
+          </p>
+          <button onClick={e => { e.stopPropagation(); onContextMenu(e); }}
+            className="shrink-0 p-1 -mr-1 rounded text-slate-400 hover:text-slate-600">
+            <MoreVertical className="w-4 h-4"/>
+          </button>
         </div>
-      )}
-      <div className="flex items-center justify-between">
-        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${TAG[task.tagColor] || TAG.slate}`}>{task.project}</span>
-        <span className="text-[9px] text-slate-400">{format(new Date(task.date),'d MMM',{locale:uk})}</span>
+        <div className="flex items-center gap-2 mt-1 ml-[26px]">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${TAG[task.tagColor] || TAG.slate}`}>{task.project}</span>
+          {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300"/>}
+          <span className="text-[10px] text-slate-400 ml-auto">{format(new Date(task.date),'d MMM',{locale:uk})}</span>
+        </div>
+        {sub.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-1 ml-[26px]">
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden flex-1">
+              <div className="h-full bg-emerald-500 rounded-full" style={{width:`${Math.round((subDone/sub.length)*100)}%`}}/>
+            </div>
+            <span className="text-[9px] text-slate-400 font-bold">{subDone}/{sub.length}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: full layout with status label + grip */}
+      <div className="hidden md:block p-3">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          {task.status === 'done' ? <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
+            : isIP ? <Clock className="w-3 h-3 text-amber-500 animate-pulse"/>
+            : <Circle className="w-3 h-3 text-slate-300"/>}
+          <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
+            {task.status === 'done' ? 'ГОТОВО' : isIP ? 'В ПРОЦЕСІ' : 'ЗАПЛАНОВАНО'}
+          </span>
+          {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300"/>}
+          <button onClick={e => { e.stopPropagation(); onContextMenu(e); }}
+            className="p-0.5 rounded text-slate-200 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">
+            <MoreVertical className="w-3.5 h-3.5"/>
+          </button>
+          <GripVertical className="w-3 h-3 text-slate-200 opacity-50"/>
+        </div>
+        <p className={`text-sm font-semibold mb-2 leading-snug ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+          {task.title}
+        </p>
+        {sub.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="h-1 bg-slate-100 rounded-full overflow-hidden flex-1">
+              <div className="h-full bg-emerald-500 rounded-full" style={{width:`${Math.round((subDone/sub.length)*100)}%`}}/>
+            </div>
+            <span className="text-[9px] text-slate-400 font-bold">{subDone}/{sub.length}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${TAG[task.tagColor] || TAG.slate}`}>{task.project}</span>
+          <span className="text-[9px] text-slate-400">{format(new Date(task.date),'d MMM',{locale:uk})}</span>
+        </div>
       </div>
     </div>
   );
@@ -262,7 +297,7 @@ export function ProjectBoard() {
             {/* Mobile single column */}
             <div className="flex-1 md:hidden overflow-y-auto space-y-2">
               {cols.find(c => c.status === mobileTab)!.tasks.map(t => (
-                <TaskCard key={t.id} task={t}
+                <TaskCard key={t.id} task={t} noDrag
                   isSelected={selectedId === t.id}
                   onSelect={() => setSelectedId(t.id === selectedId ? null : t.id)}
                   onDoubleClick={() => edit(t)}
