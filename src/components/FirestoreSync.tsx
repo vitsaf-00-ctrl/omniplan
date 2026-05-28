@@ -141,6 +141,33 @@ export function FirestoreSync() {
   const scheduledIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Expose one-time cleanup helper for browser console
+    (window as any).__cleanupRecurringDuplicates = async () => {
+      const { tasks, userId } = useTaskStore.getState();
+      if (!userId) { console.log('Not logged in'); return; }
+      const instances = tasks
+        .filter((t: Task) => !!(t as any).recurringParentId)
+        .sort((a: Task, b: Task) => a.id.localeCompare(b.id));
+      const seen = new Set<string>();
+      const toDelete: string[] = [];
+      for (const t of instances) {
+        const dateStr = new Date(t.date).toISOString().slice(0, 10);
+        const key = instanceKey(t.title, t.project, dateStr);
+        if (seen.has(key)) toDelete.push(t.id);
+        else seen.add(key);
+      }
+      console.log(`Знайдено дублікатів: ${toDelete.length}`);
+      const tasksRef = collection(db, 'users', userId, 'tasks');
+      for (const id of toDelete) {
+        await deleteDoc(doc(tasksRef, id));
+        console.log(`Видалено: ${id}`);
+      }
+      console.log('Готово!');
+    };
+    return () => { delete (window as any).__cleanupRecurringDuplicates; };
+  }, []);
+
+  useEffect(() => {
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
     scheduledIdsRef.current = new Set();
 
