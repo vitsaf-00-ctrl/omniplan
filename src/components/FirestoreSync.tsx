@@ -110,12 +110,10 @@ export function FirestoreSync() {
   const { setUserId, setTasks, setFirestoreLoaded } = useTaskStore();
   const unsubRef = useRef<(() => void) | null>(null);
   const scheduledIdsRef = useRef<Set<string>>(new Set());
-  const cleanedRef = useRef(false);
 
   useEffect(() => {
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
     scheduledIdsRef.current = new Set();
-    cleanedRef.current = false;
 
     if (!user) {
       setUserId(null);
@@ -141,11 +139,8 @@ export function FirestoreSync() {
         useTaskStore.temporal.getState().pause();
         setTasks(tasks);
         useTaskStore.temporal.getState().resume();
-        // Одноразове очищення помилкових копій-з-копій
-        if (!cleanedRef.current) {
-          cleanedRef.current = true;
-          cleanupSpuriousInstances(user.uid, tasks).catch(console.error);
-        }
+        // Очищення помилкових копій-з-копій (ідемпотентне, завершується одразу якщо нема що видаляти)
+        cleanupSpuriousInstances(user.uid, tasks).catch(console.error);
         // Планування для нових батьківських повторюваних задач
         const newIds = new Set(
           tasks
