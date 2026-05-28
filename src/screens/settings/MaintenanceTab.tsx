@@ -53,6 +53,37 @@ export function MaintenanceTab() {
     }
   };
 
+  const [isCleaningRec, setIsCleaningRec] = useState(false);
+  const [recResult, setRecResult] = useState<string | null>(null);
+
+  const cleanRecurringInstances = async () => {
+    const auth = getAuth();
+    if (!auth.currentUser) return;
+    setIsCleaningRec(true);
+    setRecResult(null);
+    try {
+      const tasksRef = collection(db, 'users', auth.currentUser.uid, 'tasks');
+      const snapshot = await getDocs(tasksRef);
+      const toDelete: string[] = [];
+      snapshot.forEach((docSnap) => {
+        if (docSnap.id.startsWith('rec_')) toDelete.push(docSnap.id);
+      });
+      for (let i = 0; i < toDelete.length; i += 500) {
+        const batch = writeBatch(db);
+        toDelete.slice(i, i + 500).forEach(id => batch.delete(doc(tasksRef, id)));
+        await batch.commit();
+      }
+      setRecResult(toDelete.length > 0
+        ? `Видалено ${toDelete.length} авто-копій повторень.`
+        : 'Авто-копій не знайдено.');
+    } catch (e) {
+      console.error(e);
+      setRecResult('Помилка. Перевір консоль.');
+    } finally {
+      setIsCleaningRec(false);
+    }
+  };
+
   const [isCleaningJune, setIsCleaningJune] = useState(false);
   const [juneResult, setJuneResult] = useState<string | null>(null);
   const cleanJuneAndMay27 = async () => {
@@ -82,6 +113,29 @@ export function MaintenanceTab() {
 
   return (
     <div className="space-y-5">
+      <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-3">
+        <div>
+          <p className="text-sm font-bold text-slate-800 dark:text-white">Видалити авто-копії повторюваних задач</p>
+          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+            Видаляє всі авто-згенеровані екземпляри повторень (ID починається з <span className="font-mono">rec_</span>).<br/>
+            Твої власні задачі не зачіпаються. Дію не можна скасувати.
+          </p>
+        </div>
+        <button
+          onClick={cleanRecurringInstances}
+          disabled={isCleaningRec}
+          className="w-full py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isCleaningRec
+            ? <><div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"/> Очищення...</>
+            : 'Видалити авто-копії повторень'}
+        </button>
+        {recResult && (
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg px-3 py-2">
+            {recResult}
+          </p>
+        )}
+      </div>
       <div className="p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl space-y-3">
         <div>
           <p className="text-sm font-bold text-slate-800 dark:text-white">Очистити задачі з некоректною датою</p>
