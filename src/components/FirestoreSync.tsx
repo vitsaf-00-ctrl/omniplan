@@ -34,7 +34,15 @@ function getNextDate(task: Task): Date | null {
 }
 
 async function cleanupSpuriousInstances(uid: string, tasks: Task[]) {
-  const spurious = tasks.filter(t => (t as any).recurringParentId?.startsWith('rec_'));
+  // Valid parents = recurring tasks that are themselves not instances
+  const validParentIds = new Set(
+    tasks.filter(t => t.recurring && !(t as any).recurringParentId).map(t => t.id)
+  );
+  // Spurious = instances whose parent is not a valid root recurring task
+  const spurious = tasks.filter(t => {
+    const parentId = (t as any).recurringParentId as string | undefined;
+    return parentId && !validParentIds.has(parentId);
+  });
   if (!spurious.length) return;
   const tasksRef = collection(db, 'users', uid, 'tasks');
   for (const t of spurious) {
