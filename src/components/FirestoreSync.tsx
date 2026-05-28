@@ -33,20 +33,33 @@ function getNextDate(task: Task): Date | null {
   return next;
 }
 
+function instanceKey(title: string, project: string, dateStr: string) {
+  return `${title}|||${project}|||${dateStr}`;
+}
+
 async function cleanupSpuriousInstances(uid: string, tasks: Task[]) {
-  // Valid parents = recurring tasks that are themselves not instances
-  const validParentIds = new Set(
-    tasks.filter(t => t.recurring && !(t as any).recurringParentId).map(t => t.id)
-  );
-  // Spurious = instances whose parent is not a valid root recurring task
-  const spurious = tasks.filter(t => {
-    const parentId = (t as any).recurringParentId as string | undefined;
-    return parentId && !validParentIds.has(parentId);
-  });
-  if (!spurious.length) return;
+  // Among recurring instances, keep only ONE per (title, project, date).
+  // Sort by id so we deterministically keep the same one across runs.
+  const instances = tasks
+    .filter(t => !!(t as any).recurringParentId)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  const seen = new Set<string>();
+  const toDelete: string[] = [];
+  for (const t of instances) {
+    const dateStr = new Date(t.date).toISOString().slice(0, 10);
+    const key = instanceKey(t.title, t.project, dateStr);
+    if (seen.has(key)) {
+      toDelete.push(t.id);
+    } else {
+      seen.add(key);
+    }
+  }
+
+  if (!toDelete.length) return;
   const tasksRef = collection(db, 'users', uid, 'tasks');
-  for (const t of spurious) {
-    await deleteDoc(doc(tasksRef, t.id));
+  for (const id of toDelete) {
+    await deleteDoc(doc(tasksRef, id));
   }
 }
 
@@ -62,6 +75,12 @@ async function scheduleRecurringTasks(uid: string, tasks: Task[], onlyIds?: Set<
   in30days.setDate(today.getDate() + 30);
 
   const existingIds = new Set(tasks.map(t => t.id));
+  // Track (title, project, date) to prevent cross-parent duplicates
+  const existingKeys = new Set(
+    tasks
+      .filter(t => !!(t as any).recurringParentId)
+      .map(t => instanceKey(t.title, t.project, new Date(t.date).toISOString().slice(0, 10)))
+  );
 
   for (const task of toSchedule) {
     const recurringType = (task as any).recurringType || 'weekly';
@@ -71,8 +90,9 @@ async function scheduleRecurringTasks(uid: string, tasks: Task[], onlyIds?: Set<
     while (next <= in30days) {
       const dateStr = next.toISOString().slice(0, 10);
       const id = `rec_${task.id}_${dateStr}`;
+      const key = instanceKey(task.title, task.project, dateStr);
 
-      if (!existingIds.has(id)) {
+      if (!existingIds.has(id) && !existingKeys.has(key)) {
         const tasksRef = collection(db, 'users', uid, 'tasks');
         await setDoc(doc(tasksRef, id), {
           id,
@@ -91,6 +111,7 @@ async function scheduleRecurringTasks(uid: string, tasks: Task[], onlyIds?: Set<
           recurringParentId: task.id,
         });
         existingIds.add(id);
+        existingKeys.add(key);
       }
 
       if (recurringType === 'daily') {
