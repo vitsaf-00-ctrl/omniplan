@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore, Task } from '../store/useTaskStore';
 import { subscribeToUserTasks, subscribeToUserProjects, initUserProjects } from '../lib/taskFirestore';
-import { collection, setDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, setDoc, doc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 function getNextDate(task: Task): Date | null {
@@ -33,33 +33,38 @@ function getNextDate(task: Task): Date | null {
   return next;
 }
 
-async function scheduleRecurringTasks(uid: string, tasks: Task[]) {
-  const recurring = tasks.filter(t => t.recurring);
-  if (!recurring.length) return;
+async function cleanupSpuriousInstances(uid: string, tasks: Task[]) {
+  const spurious = tasks.filter(t => (t as any).recurringParentId?.startsWith('rec_'));
+  if (!spurious.length) return;
+  const tasksRef = collection(db, 'users', uid, 'tasks');
+  for (const t of spurious) {
+    await deleteDoc(doc(tasksRef, t.id));
+  }
+}
+
+async function scheduleRecurringTasks(uid: string, tasks: Task[], onlyIds?: Set<string>) {
+  // Only process parent tasks — instances have recurringParentId set
+  const recurring = tasks.filter(t => t.recurring && !(t as any).recurringParentId);
+  const toSchedule = onlyIds ? recurring.filter(t => onlyIds.has(t.id)) : recurring;
+  if (!toSchedule.length) return;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const in30days = new Date(today);
   in30days.setDate(today.getDate() + 30);
 
-  for (const task of recurring) {
+  const existingIds = new Set(tasks.map(t => t.id));
+
+  for (const task of toSchedule) {
     const recurringType = (task as any).recurringType || 'weekly';
     let next = getNextDate(task);
     if (!next) continue;
 
-    // Створюємо копії на 30 днів вперед
     while (next <= in30days) {
       const dateStr = next.toISOString().slice(0, 10);
-      // Перевіряємо чи вже є така задача
-      const exists = tasks.some(t =>
-        t.title === task.title &&
-        t.project === task.project &&
-        new Date(t.date).toISOString().slice(0, 10) === dateStr &&
-        t.id !== task.id
-      );
+      const id = `rec_${task.id}_${dateStr}`;
 
-      if (!exists) {
-        const id = `rec_${task.id}_${dateStr}`;
+      if (!existingIds.has(id)) {
         const tasksRef = collection(db, 'users', uid, 'tasks');
         await setDoc(doc(tasksRef, id), {
           id,
@@ -77,9 +82,9 @@ async function scheduleRecurringTasks(uid: string, tasks: Task[]) {
           recurringType,
           recurringParentId: task.id,
         });
+        existingIds.add(id);
       }
 
-      // Наступна дата
       if (recurringType === 'daily') {
         next = new Date(next);
         next.setDate(next.getDate() + 1);
@@ -104,11 +109,13 @@ export function FirestoreSync() {
   const user = useAppStore(s => s.user);
   const { setUserId, setTasks, setFirestoreLoaded } = useTaskStore();
   const unsubRef = useRef<(() => void) | null>(null);
-  const scheduledRef = useRef(false);
+  const scheduledIdsRef = useRef<Set<string>>(new Set());
+  const cleanedRef = useRef(false);
 
   useEffect(() => {
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
-    scheduledRef.current = false;
+    scheduledIdsRef.current = new Set();
+    cleanedRef.current = false;
 
     if (!user) {
       setUserId(null);
@@ -134,10 +141,20 @@ export function FirestoreSync() {
         useTaskStore.temporal.getState().pause();
         setTasks(tasks);
         useTaskStore.temporal.getState().resume();
-        // Запускаємо планування тільки один раз при першому завантаженні
-        if (!scheduledRef.current) {
-          scheduledRef.current = true;
-          scheduleRecurringTasks(user.uid, tasks).catch(console.error);
+        // Одноразове очищення помилкових копій-з-копій
+        if (!cleanedRef.current) {
+          cleanedRef.current = true;
+          cleanupSpuriousInstances(user.uid, tasks).catch(console.error);
+        }
+        // Планування для нових батьківських повторюваних задач
+        const newIds = new Set(
+          tasks
+            .filter(t => t.recurring && !(t as any).recurringParentId && !scheduledIdsRef.current.has(t.id))
+            .map(t => t.id)
+        );
+        if (newIds.size > 0) {
+          newIds.forEach(id => scheduledIdsRef.current.add(id));
+          scheduleRecurringTasks(user.uid, tasks, newIds).catch(console.error);
         }
       },
       () => setFirestoreLoaded(true),
