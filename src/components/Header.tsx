@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Menu, Plus, Bell, Target, Search } from 'lucide-react';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTaskStore } from '@/src/store/useTaskStore';
@@ -10,16 +10,17 @@ const TITLES: Record<string, string> = {
 
 export function Header() {
   const { setMobileMenuOpen, activeView, setTaskModalOpen, setEditingTask, setActiveView, setSearchOpen } = useAppStore();
-  const { tasks } = useTaskStore();
   const [notifOpen, setNotifOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
 
   const todayStr = new Date().toDateString();
-  const notifs = tasks
-    .filter(t => t.notifyAtTime && t.time && t.status !== 'done' && !t.someday
-      && new Date(t.date).toDateString() === todayStr)
-    .slice(0, 10);
+  const tasks = useTaskStore(s => s.tasks);
+  const notifs = useMemo(
+    () => tasks.filter(t => t.notifyAtTime && t.time && t.status !== 'done' && !t.someday
+      && new Date(t.date).toDateString() === todayStr).slice(0, 10),
+    [tasks, todayStr]
+  );
   const unread = notifs.filter(t => !readIds.has(t.id)).length;
 
   // Close on outside click

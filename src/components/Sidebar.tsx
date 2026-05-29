@@ -17,7 +17,10 @@ const COLORS: TagColor[] = ['indigo','blue','purple','emerald','amber','rose','s
 
 export function Sidebar() {
   const { user, isMobileMenuOpen, setMobileMenuOpen, activeView, setActiveView } = useAppStore();
-  const { projects, activeProjectFilter, setActiveProjectFilter, deleteProject, setProjects, userId } = useTaskStore();
+  const projects = useTaskStore(s => s.projects);
+  const activeProjectFilter = useTaskStore(s => s.activeProjectFilter);
+  const userId = useTaskStore(s => s.userId);
+  const { setActiveProjectFilter, deleteProject, setProjects } = useTaskStore();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState<TagColor>('indigo');

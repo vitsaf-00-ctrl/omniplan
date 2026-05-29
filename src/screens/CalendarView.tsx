@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { ChevronLeft, ChevronRight, Upload, Plus, Repeat, Clock, CheckCircle2, Circle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
@@ -6,8 +6,9 @@ import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, each
 import { uk } from 'date-fns/locale';
 import { useTaskStore, Task } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
-import { ImportModal } from '../components/ImportModal';
 import { TaskContextMenu } from '../components/TaskContextMenu';
+
+const ImportModal = lazy(() => import('../components/ImportModal').then(m => ({ default: m.ImportModal })));
 
 const TODAY = new Date();
 
@@ -44,6 +45,11 @@ const TAG_BG: Record<string,string> = {
   slate:'border-l-slate-400 bg-slate-50 text-slate-700',
 };
 
+const COLOR_DOT: Record<string,string> = {
+  blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
+  emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
+};
+
 type Ctx = { x: number; y: number; task: Task };
 
 
@@ -54,11 +60,7 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
   const pill = isDone ? PILL_DONE : isIP ? PILL_IP : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
-  const DOT: Record<string,string> = {
-    blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
-    emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
-  };
-  const dotCls = isDone ? 'bg-slate-300 opacity-60' : isIP ? 'bg-amber-400' : (DOT[task.tagColor] || DOT.slate);
+  const dotCls = isDone ? 'bg-slate-300 opacity-60' : isIP ? 'bg-amber-400' : (COLOR_DOT[task.tagColor] || COLOR_DOT.slate);
 
   const handleDrag = (e: React.DragEvent) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); };
   const handleDbl  = (e: React.MouseEvent) => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); };
@@ -229,11 +231,6 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
     return (h - TL_START) * HOUR_PX + (m / 60) * HOUR_PX;
   };
 
-  const TL_DOT: Record<string,string> = {
-    blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
-    emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
-  };
-
   // Sort and assign 2-column layout to avoid timed task visual overlap
   const validTimed = timed
     .filter(t => { const h = parseInt((t.time||'').split(':')[0], 10); return !isNaN(h) && h >= TL_START && h <= TL_END; })
@@ -275,7 +272,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
             {timeless.map(t => (
               <div key={t.id} onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
                 className="flex items-center gap-3 py-2.5 border-b border-slate-200 dark:border-slate-700 last:border-0 cursor-pointer">
-                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${TL_DOT[t.tagColor]||'bg-slate-400'}`}/>
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${COLOR_DOT[t.tagColor]||'bg-slate-400'}`}/>
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold text-slate-800 dark:text-white line-clamp-2">{t.title}</p>
                   <p className="text-xs text-slate-400">{t.project}</p>
@@ -293,7 +290,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
                 <div key={t.id} onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
                   className={`flex items-start gap-3 py-2.5 border-b border-slate-100 dark:border-slate-700 cursor-pointer ${isDone ? 'opacity-50' : ''}`}>
                   <span className="text-xs font-bold text-slate-400 w-10 shrink-0 pt-0.5 tabular-nums">{t.time}</span>
-                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${TL_DOT[t.tagColor]||'bg-slate-400'}`}/>
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${COLOR_DOT[t.tagColor]||'bg-slate-400'}`}/>
                   <div className="flex-1 min-w-0">
                     <p className={`text-[13px] font-semibold line-clamp-2 ${isDone ? 'line-through text-slate-400' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
                     <p className="text-xs text-slate-400">{t.project}</p>
@@ -531,7 +528,7 @@ export function CalendarView() {
         </div>
         <button onClick={()=>setImportOpen(true)} className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1.5 rounded-lg"><Upload className="w-3.5 h-3.5"/></button>
       </div>
-      <ImportModal isOpen={importOpen} onClose={()=>setImportOpen(false)}/>
+      <Suspense fallback={null}><ImportModal isOpen={importOpen} onClose={()=>setImportOpen(false)}/></Suspense>
       <DayView day={dayDate} onPrev={prev} onNext={next}/>
     </div>
   );
@@ -586,7 +583,7 @@ export function CalendarView() {
       </div>
 
       {monthPickerOpen&&<MonthPicker current={currentDate} onSelect={setCurrentDate} onClose={()=>setMonthPickerOpen(false)}/>}
-      <ImportModal isOpen={importOpen} onClose={()=>setImportOpen(false)}/>
+      <Suspense fallback={null}><ImportModal isOpen={importOpen} onClose={()=>setImportOpen(false)}/></Suspense>
 
       {viewMode==='timeline' ? (
         <div className="flex-1 overflow-hidden">

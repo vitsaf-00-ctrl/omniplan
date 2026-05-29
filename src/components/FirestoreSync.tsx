@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { useTaskStore } from '../store/useTaskStore';
-import { subscribeToUserTasks, subscribeToUserProjects, initUserProjects } from '../lib/taskFirestore';
+import { subscribeToUserTasks, subscribeToUserProjects } from '../lib/taskFirestore';
 
 export function FirestoreSync() {
   const user = useAppStore(s => s.user);
@@ -20,9 +20,6 @@ export function FirestoreSync() {
 
     setUserId(user.uid);
 
-    initUserProjects(user.uid).then(projects => {
-      useTaskStore.getState().setProjects(projects);
-    });
     const unsubProjects = subscribeToUserProjects(user.uid, (projects) => {
       useTaskStore.getState().setProjects(projects);
     });

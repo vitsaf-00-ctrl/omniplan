@@ -1,7 +1,7 @@
 import { db } from './firebase';
 import {
   collection, doc, setDoc, deleteDoc, onSnapshot,
-  query, orderBy, where, Timestamp, getDocs,
+  query, orderBy, where, Timestamp, getDocs, writeBatch,
 } from 'firebase/firestore';
 import type { Task, TagColor } from '../store/useTaskStore';
 
@@ -34,18 +34,28 @@ function taskToDoc(task: Task): Record<string, unknown> {
   };
 }
 
+const VALID_STATUSES = new Set<Task['status']>(['todo', 'in_progress', 'done']);
+const VALID_COLORS = new Set<Task['tagColor']>(['blue', 'indigo', 'purple', 'emerald', 'amber', 'rose', 'slate']);
+const VALID_PRIORITIES = new Set<NonNullable<Task['priority']>>(['high', 'medium', 'low']);
+
 function docToTask(id: string, raw: Record<string, unknown>): Task {
-  const toDate = (v: unknown): Date =>
-    v instanceof Timestamp ? v.toDate() : v ? new Date(v as string) : new Date();
+  const toDate = (v: unknown): Date => {
+    const d = v instanceof Timestamp ? v.toDate() : v ? new Date(v as string) : new Date();
+    return isNaN(d.getTime()) ? new Date() : d;
+  };
+
+  const rawStatus = raw.status as string;
+  const rawColor = raw.tagColor as string;
+  const rawPriority = raw.priority as string;
 
   return {
     id,
     title: String(raw.title ?? ''),
     project: String(raw.project ?? ''),
-    status: (raw.status as Task['status']) ?? 'todo',
+    status: VALID_STATUSES.has(rawStatus as Task['status']) ? rawStatus as Task['status'] : 'todo',
     date: toDate(raw.date),
     someday: Boolean(raw.someday),
-    tagColor: (raw.tagColor as Task['tagColor']) ?? 'slate',
+    tagColor: VALID_COLORS.has(rawColor as Task['tagColor']) ? rawColor as Task['tagColor'] : 'slate',
     notes: (raw.notes as string) || undefined,
     recurring: (raw.recurring as boolean) || undefined,
     recurringType: (raw.recurringType as string) || undefined,
@@ -63,7 +73,7 @@ function docToTask(id: string, raw: Record<string, unknown>): Task {
       };
     }),
     createdAt: toDate(raw.createdAt),
-    priority: (raw.priority as Task['priority']) || undefined,
+    priority: VALID_PRIORITIES.has(rawPriority as NonNullable<Task['priority']>) ? rawPriority as Task['priority'] : undefined,
     time: (raw.time as string) || undefined,
   };
 }
@@ -87,19 +97,19 @@ export function subscribeToUserTasks(
 }
 
 export async function fsSetTask(uid: string, task: Task): Promise<void> {
-  try {
-    await setDoc(doc(db, 'users', uid, 'tasks', task.id), taskToDoc(task));
-  } catch (e) {
-    console.error('[Firestore] fsSetTask', e);
-  }
+  await setDoc(doc(db, 'users', uid, 'tasks', task.id), taskToDoc(task));
 }
 
 export async function fsDeleteTask(uid: string, taskId: string): Promise<void> {
-  try {
-    await deleteDoc(doc(db, 'users', uid, 'tasks', taskId));
-  } catch (e) {
-    console.error('[Firestore] fsDeleteTask', e);
-  }
+  await deleteDoc(doc(db, 'users', uid, 'tasks', taskId));
+}
+
+export async function fsBatchSync(uid: string, toSet: Task[], toDelete: string[]): Promise<void> {
+  if (toSet.length === 0 && toDelete.length === 0) return;
+  const batch = writeBatch(db);
+  for (const task of toSet) batch.set(doc(db, 'users', uid, 'tasks', task.id), taskToDoc(task));
+  for (const id of toDelete) batch.delete(doc(db, 'users', uid, 'tasks', id));
+  await batch.commit();
 }
 
 // ─── Invites ──────────────────────────────────────────────────────────────────
@@ -210,7 +220,7 @@ export async function initUserProjects(uid: string): Promise<FirestoreProject[]>
 }
 
 export async function addUserProject(uid: string, name: string, color: TagColor): Promise<FirestoreProject> {
-  const id = `proj_${Date.now()}`;
+  const id = crypto.randomUUID();
   const ref = collection(db, 'users', uid, 'projects');
   const createdAt = Timestamp.now();
   await setDoc(doc(ref, id), { id, name, color, createdAt });

@@ -6,23 +6,23 @@ import { useToastStore } from '../store/useToastStore';
 
 export function useKeyboardShortcuts() {
   const { setTaskModalOpen, setEditingTask, setSelectedDate, setClipboard, clearClipboard, clipboardTaskId, clipboardMode, setSelectedTaskId, setConfirmDialog, setSearchOpen } = useAppStore();
-  const { tasks, deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
+  const { deleteTask, duplicateTask, moveTask, moveTaskToDate, getTaskById } = useTaskStore();
   const { undo, redo, canUndo, canRedo } = useUndoRedo();
   const addToast = useToastStore(s => s.addToast);
   const selectedIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    (window as any).__setKeyboardSelectedId = (id: string | null) => {
+    window.__setKeyboardSelectedId = (id: string | null) => {
       selectedIdRef.current = id;
       setSelectedTaskId(id);
     };
-    (window as any).__notifySelectedId = (id: string | null) => {
+    window.__notifySelectedId = (id: string | null) => {
       selectedIdRef.current = id;
       setSelectedTaskId(id);
     };
     return () => {
-      delete (window as any).__setKeyboardSelectedId;
-      delete (window as any).__notifySelectedId;
+      delete window.__setKeyboardSelectedId;
+      delete window.__notifySelectedId;
     };
   }, []);
 
@@ -69,7 +69,7 @@ export function useKeyboardShortcuts() {
       // Escape — зняти виділення
       if (e.key === 'Escape') {
         selectedIdRef.current = null;
-        (window as any).__notifySelectedId?.(null);
+        window.__notifySelectedId?.(null);
         return;
       }
 
@@ -100,7 +100,7 @@ export function useKeyboardShortcuts() {
           onConfirm: () => {
             deleteTask(selectedId);
             selectedIdRef.current = null;
-            (window as any).__notifySelectedId?.(null);
+            window.__notifySelectedId?.(null);
             addToast({ type: 'info', message: `Видалено «${taskTitle}»`, action: { label: 'Скасувати', onClick: undo } });
           },
         });
@@ -154,5 +154,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [tasks, clipboardTaskId, clipboardMode, canUndo, canRedo, undo, redo]);
+  }, [clipboardTaskId, clipboardMode, canUndo, canRedo, undo, redo]);
 }

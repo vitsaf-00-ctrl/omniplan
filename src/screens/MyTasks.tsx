@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo, useCallback, memo } from 'react';
 import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
@@ -21,7 +21,7 @@ const DOT: Record<string,string> = {
 
 type Ctx = { x: number; y: number; task: Task };
 
-function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
+const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
   task: Task;
   isSelected: boolean;
   onSelect: () => void;
@@ -94,7 +94,7 @@ function TaskRow({ task, isSelected, onSelect, onDoubleClick, onContextMenu }: {
       <GripVertical className="w-4 h-4 text-slate-200 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"/>
     </div>
   );
-}
+});
 
 function SomedaySection() {
   const { getSomedayTasks, moveTaskToDate } = useTaskStore();
@@ -237,7 +237,7 @@ export function MyTasks() {
   // Maps dateKey (yyyy-MM-dd) → ordered task IDs (from DnD)
   const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
 
-  const filtered = tasks.filter(t => {
+  const filtered = useMemo(() => tasks.filter(t => {
     if (t.someday) return false;
     if (t.status === 'done') return false;
     if (statusFilter !== 'all' && t.status !== statusFilter) return false;
@@ -246,31 +246,31 @@ export function MyTasks() {
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
     return true;
-  });
+  }), [tasks, statusFilter, projectFilter, activeProjectFilter, search, priorityFilter]);
 
-  const archiveTasks = tasks.filter(t => {
+  const archiveTasks = useMemo(() => tasks.filter(t => {
     if (t.status !== 'done') return false;
     if (projectFilter !== 'all' && t.project !== projectFilter) return false;
     if (activeProjectFilter && t.project !== activeProjectFilter) return false;
     if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
     if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
     return true;
-  });
+  }), [tasks, projectFilter, activeProjectFilter, search, priorityFilter]);
 
-  const sorted = [...filtered].sort((a, b) => {
-    const o: Record<TaskStatus,number> = {in_progress:0,todo:1,done:2};
-    if (o[a.status] !== o[b.status]) return o[a.status] - o[b.status];
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  });
+  const { sorted, grouped, groupKeys } = useMemo(() => {
+    const s = [...filtered].sort((a, b) => {
+      const o: Record<TaskStatus,number> = {in_progress:0,todo:1,done:2};
+      if (o[a.status] !== o[b.status]) return o[a.status] - o[b.status];
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+    const g: Record<string, Task[]> = {};
+    s.forEach(t => {
+      const k = format(new Date(t.date), 'yyyy-MM-dd');
+      (g[k] ??= []).push(t);
+    });
+    return { sorted: s, grouped: g, groupKeys: Object.keys(g).sort() };
+  }, [filtered]);
 
-  // Group by ISO date key
-  const grouped: Record<string, Task[]> = {};
-  sorted.forEach(t => {
-    const k = format(new Date(t.date), 'yyyy-MM-dd');
-    (grouped[k] ??= []).push(t);
-  });
-
-  const groupKeys = Object.keys(grouped).sort();
   const totalDone = archiveTasks.length;
 
   const getDisplayTasks = (dateKey: string): Task[] => {
@@ -309,7 +309,7 @@ export function MyTasks() {
     }
   };
 
-  const openEdit = (task: Task) => { setEditingTask(task); setTaskModalOpen(true); };
+  const openEdit = useCallback((task: Task) => { setEditingTask(task); setTaskModalOpen(true); }, [setEditingTask, setTaskModalOpen]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden" onClick={() => setSelectedId(null)}>

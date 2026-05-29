@@ -1,7 +1,8 @@
 import { create, useStore } from 'zustand';
 import { temporal } from 'zundo';
 import type { TemporalState } from 'zundo';
-import { fsSetTask, fsDeleteTask } from '../lib/taskFirestore';
+import { fsSetTask, fsDeleteTask, fsBatchSync } from '../lib/taskFirestore';
+import { useToastStore } from './useToastStore';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TagColor = 'blue' | 'indigo' | 'purple' | 'emerald' | 'amber' | 'rose' | 'slate';
@@ -57,15 +58,19 @@ export const PROJECTS: Project[] = [
 ];
 export function getProjectColor(p: string): TagColor { return PC[p] || 'slate'; }
 
-let nextId = 1000;
-let nextSubId = 100;
+const uid = () => crypto.randomUUID();
+
+function onSyncError(e: unknown) {
+  console.error('[Firestore] sync error', e);
+  useToastStore.getState().addToast({ type: 'error', message: 'Помилка збереження. Перевірте з\'єднання.' });
+}
 
 // Helper: write updated task to Firestore after a store mutation
 function syncTask(get: () => TaskStore, taskId: string) {
   const { userId, tasks } = get();
   if (!userId) return;
   const task = tasks.find(t => t.id === taskId);
-  if (task) fsSetTask(userId, task);
+  if (task) fsSetTask(userId, task).catch(onSyncError);
 }
 
 interface TaskStore {
@@ -128,7 +133,7 @@ export const useTaskStore = create<TaskStore>()(
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   addTask: (task) => {
-    const id = `task_${Date.now()}_${nextId++}`;
+    const id = uid();
     const newTask: Task = { ...task, id, createdAt: new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
     const { userId } = get();
@@ -144,7 +149,7 @@ export const useTaskStore = create<TaskStore>()(
   deleteTask: (id) => {
     set(s => ({ tasks: s.tasks.filter(t => t.id!==id) }));
     const { userId } = get();
-    if (userId) fsDeleteTask(userId, id);
+    if (userId) fsDeleteTask(userId, id).catch(onSyncError);
   },
 
   moveTask: (id, newStatus) => {
@@ -160,22 +165,22 @@ export const useTaskStore = create<TaskStore>()(
   copyTaskToDate: (id, newDate) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return;
-    const newTask: Task = { ...task, id:`task_${Date.now()}_${nextId++}`, date:newDate, status:'todo', someday:false, createdAt:new Date() };
+    const newTask: Task = { ...task, id:uid(), date:newDate, status:'todo', someday:false, createdAt:new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
     const { userId } = get();
     if (userId) fsSetTask(userId, newTask);
   },
 
   importTasks: (tasks) => {
-    const newTasks = tasks.map(t => ({ ...t, id:`import_${Date.now()}_${nextId++}`, createdAt:new Date() }));
+    const newTasks = tasks.map(t => ({ ...t, id:uid(), createdAt:new Date() }));
     set(s => ({ tasks: [...s.tasks, ...newTasks] }));
     const { userId } = get();
-    if (userId) Promise.all(newTasks.map(t => fsSetTask(userId, t))).catch(console.error);
+    if (userId) fsBatchSync(userId, newTasks, []).catch(onSyncError);
   },
 
   addProject: (name) => {
     const colors: TagColor[] = ['blue','indigo','purple','emerald','amber','rose'];
-    set(s => ({ projects: [...s.projects, { id:`proj_${Date.now()}`, name, color: colors[s.projects.length%colors.length] }] }));
+    set(s => ({ projects: [...s.projects, { id:uid(), name, color: colors[s.projects.length%colors.length] }] }));
   },
 
   setActiveProjectFilter: (p) => set({ activeProjectFilter: p }),
@@ -185,7 +190,7 @@ export const useTaskStore = create<TaskStore>()(
     set(s => ({
       tasks: s.tasks.map(t => t.id===taskId ? {
         ...t,
-        subtasks: [...(t.subtasks||[]), { id:`sub_${nextSubId++}`, title, done:false, date }]
+        subtasks: [...(t.subtasks||[]), { id:uid(), title, done:false, date }]
       } : t)
     }));
     syncTask(get, taskId);
@@ -224,7 +229,7 @@ export const useTaskStore = create<TaskStore>()(
   duplicateTask: (id) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return '';
-    const newId = `task_${Date.now()}_${nextId++}`;
+    const newId = uid();
     const newTask: Task = { ...task, id: newId, status: 'todo', createdAt: new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
     const { userId } = get();

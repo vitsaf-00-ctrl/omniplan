@@ -118,7 +118,7 @@ export function Today() {
   const setSelected = (id: string | null) => {
     setSelectedId(id);
     setSelectedTaskId(id);
-    (window as any).__setKeyboardSelectedId?.(id);
+    window.__setKeyboardSelectedId?.(id);
   };
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const [groupOrder, setGroupOrder] = useState<Record<string, string[]>>({});
