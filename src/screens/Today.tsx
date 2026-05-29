@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check, X } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check, X, Sparkles, Plus } from 'lucide-react';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
@@ -10,6 +10,168 @@ import { TaskContextMenu } from '../components/TaskContextMenu';
 import { SyncIndicator } from '../components/SyncIndicator';
 
 const TODAY = new Date();
+const TODAY_START = new Date(TODAY); TODAY_START.setHours(0, 0, 0, 0);
+
+// ─── Day plan suggestion logic ─────────────────────────────────────────────
+
+type SuggestionReason = 'overdue' | 'high' | 'in_progress' | 'someday';
+
+interface Suggestion {
+  task: Task;
+  reason: SuggestionReason;
+}
+
+function buildSuggestions(allTasks: Task[], todayIds: Set<string>, todayActiveCount: number): Suggestion[] {
+  const candidates = allTasks.filter(t => !todayIds.has(t.id) && t.status !== 'done');
+  const result: Suggestion[] = [];
+  const seen = new Set<string>();
+
+  const push = (t: Task, reason: SuggestionReason) => {
+    if (!seen.has(t.id) && result.length < 5) { seen.add(t.id); result.push({ task: t, reason }); }
+  };
+
+  // 1. In-progress tasks not yet on today
+  candidates
+    .filter(t => t.status === 'in_progress' && !t.someday)
+    .forEach(t => push(t, 'in_progress'));
+
+  // 2. Overdue tasks (date < today, oldest first)
+  candidates
+    .filter(t => !t.someday && new Date(t.date) < TODAY_START)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 3)
+    .forEach(t => push(t, 'overdue'));
+
+  // 3. High priority future tasks
+  candidates
+    .filter(t => !t.someday && t.priority === 'high' && new Date(t.date) >= TODAY_START)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 2)
+    .forEach(t => push(t, 'high'));
+
+  // 4. Someday tasks — only when today has fewer than 5 active tasks
+  if (todayActiveCount < 5) {
+    candidates
+      .filter(t => t.someday)
+      .slice(0, 3 - result.filter(s => s.reason === 'someday').length)
+      .forEach(t => push(t, 'someday'));
+  }
+
+  return result;
+}
+
+const REASON_LABEL: Record<SuggestionReason, { label: string; cls: string }> = {
+  overdue:     { label: 'Прострочено', cls: 'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' },
+  high:        { label: 'Важлива',     cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  in_progress: { label: 'В процесі',   cls: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+  someday:     { label: 'Колись',      cls: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
+};
+
+function SuggestionRow({ s, onAdd, onSkip }: {
+  s: Suggestion;
+  onAdd: (t: Task) => void;
+  onSkip: (id: string) => void;
+}) {
+  const badge = REASON_LABEL[s.reason];
+  return (
+    <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-white/60 dark:hover:bg-white/5 transition-colors group">
+      <span className={`shrink-0 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wide ${badge.cls}`}>
+        {badge.label}
+      </span>
+      <p className="flex-1 text-xs font-semibold text-slate-700 dark:text-slate-200 line-clamp-1 min-w-0">
+        {s.task.title}
+      </p>
+      <span className="text-[9px] text-slate-400 shrink-0 hidden sm:block">{s.task.project}</span>
+      <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+        <button
+          onClick={() => onAdd(s.task)}
+          title="Додати в сьогодні"
+          className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 px-2 py-0.5 rounded-full transition-colors"
+        >
+          <Plus className="w-2.5 h-2.5"/> Додати
+        </button>
+        <button
+          onClick={() => onSkip(s.task.id)}
+          title="Пропустити"
+          className="p-1 text-slate-300 hover:text-slate-500 transition-colors rounded-full"
+        >
+          <X className="w-3 h-3"/>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DayPlanSuggestions({ todayIds, todayActiveCount }: {
+  todayIds: Set<string>;
+  todayActiveCount: number;
+}) {
+  const { tasks, moveTaskToDate } = useTaskStore();
+  const [dismissed, setDismissed] = useState(false);
+  const [skipped, setSkipped] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState(true);
+
+  const suggestions = useMemo(
+    () => buildSuggestions(tasks, todayIds, todayActiveCount).filter(s => !skipped.has(s.task.id)),
+    [tasks, todayIds, todayActiveCount, skipped],
+  );
+
+  if (dismissed || suggestions.length === 0) return null;
+
+  const addToToday = (task: Task) => {
+    moveTaskToDate(task.id, new Date());
+    setSkipped(prev => new Set([...prev, task.id]));
+  };
+
+  const skipOne = (id: string) => setSkipped(prev => new Set([...prev, id]));
+
+  const skipAll = () => setDismissed(true);
+
+  return (
+    <div className="mb-3 rounded-xl border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-br from-indigo-50/80 to-purple-50/40 dark:from-indigo-950/20 dark:to-purple-950/10 shrink-0 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <button
+          className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+          onClick={() => setExpanded(v => !v)}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0"/>
+          <span className="text-[11px] font-black text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
+            План дня
+          </span>
+          <span className="text-[10px] text-indigo-400 ml-1">
+            {suggestions.length} {suggestions.length === 1 ? 'пропозиція' : suggestions.length < 5 ? 'пропозиції' : 'пропозицій'}
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 ml-auto transition-transform ${expanded ? '' : '-rotate-90'}`}/>
+        </button>
+        <button
+          onClick={skipAll}
+          title="Приховати"
+          className="ml-2 p-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors shrink-0"
+        >
+          <X className="w-3.5 h-3.5"/>
+        </button>
+      </div>
+
+      {/* List */}
+      {expanded && (
+        <div className="px-1 pb-2 space-y-0.5">
+          {suggestions.map(s => (
+            <SuggestionRow key={s.task.id} s={s} onAdd={addToToday} onSkip={skipOne}/>
+          ))}
+          <div className="flex justify-end pt-1 px-2">
+            <button
+              onClick={skipAll}
+              className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 font-semibold transition-colors"
+            >
+              Пропустити всі
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const TAG: Record<string,string> = {
   blue:'bg-blue-100 text-blue-700', indigo:'bg-indigo-100 text-indigo-700',
@@ -263,6 +425,11 @@ export function Today() {
       </div>
 
       <QuickAddBar date={TODAY} />
+
+      <DayPlanSuggestions
+        todayIds={new Set(allTasks.map(t => t.id))}
+        todayActiveCount={allTasks.filter(t => t.status !== 'done').length}
+      />
 
       {/* Filter chips */}
       {hasFilters && (
