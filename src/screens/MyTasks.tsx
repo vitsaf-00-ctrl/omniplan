@@ -257,7 +257,7 @@ export function MyTasks() {
     return true;
   }), [tasks, projectFilter, activeProjectFilter, search, priorityFilter]);
 
-  const { sorted, grouped, groupKeys } = useMemo(() => {
+  const { grouped, groupKeys } = useMemo(() => {
     const s = [...filtered].sort((a, b) => {
       const o: Record<TaskStatus,number> = {in_progress:0,todo:1,done:2};
       if (o[a.status] !== o[b.status]) return o[a.status] - o[b.status];
@@ -268,7 +268,7 @@ export function MyTasks() {
       const k = format(new Date(t.date), 'yyyy-MM-dd');
       (g[k] ??= []).push(t);
     });
-    return { sorted: s, grouped: g, groupKeys: Object.keys(g).sort() };
+    return { grouped: g, groupKeys: Object.keys(g).sort() };
   }, [filtered]);
 
   const totalDone = archiveTasks.length;
