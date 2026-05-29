@@ -120,7 +120,7 @@ export function TaskModal() {
     if (editingTask) {
       addSubtask(editingTask.id, newSubtask.trim());
     } else {
-      setLocalSubtasks(prev => [...prev, { id: crypto.randomUUID(), title: newSubtask.trim(), done: false }]);
+      setLocalSubtasks(prev => [...prev, { id: `sub_${crypto.randomUUID()}`, title: newSubtask.trim(), done: false }]);
     }
     setNewSubtask('');
   };

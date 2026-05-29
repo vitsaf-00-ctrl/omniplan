@@ -3,6 +3,7 @@ import { temporal } from 'zundo';
 import type { TemporalState } from 'zundo';
 import { fsSetTask, fsDeleteTask, fsBatchSync } from '../lib/taskFirestore';
 import { useToastStore } from './useToastStore';
+import { useSyncStore } from './useSyncStore';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TagColor = 'blue' | 'indigo' | 'purple' | 'emerald' | 'amber' | 'rose' | 'slate';
@@ -58,19 +59,46 @@ export const PROJECTS: Project[] = [
 ];
 export function getProjectColor(p: string): TagColor { return PC[p] || 'slate'; }
 
-const uid = () => crypto.randomUUID();
+const uid = (prefix = '') => `${prefix}${crypto.randomUUID()}`;
 
-function onSyncError(e: unknown) {
-  console.error('[Firestore] sync error', e);
-  useToastStore.getState().addToast({ type: 'error', message: 'Помилка збереження. Перевірте з\'єднання.' });
+function syncTask(get: () => TaskStore, taskId: string): void {
+  const attempt = () => {
+    const { userId, tasks } = get();
+    if (!userId) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    useSyncStore.getState().markSaving(taskId);
+    fsSetTask(userId, task)
+      .then(() => useSyncStore.getState().markSaved(taskId))
+      .catch(e => {
+        console.error('[Firestore] syncTask error', e);
+        useSyncStore.getState().markError(taskId, attempt);
+        useToastStore.getState().addToast({
+          type: 'error',
+          message: 'Помилка збереження. Перевірте з\'єднання.',
+          action: { label: 'Повторити', onClick: attempt },
+        });
+      });
+  };
+  attempt();
 }
 
-// Helper: write updated task to Firestore after a store mutation
-function syncTask(get: () => TaskStore, taskId: string) {
-  const { userId, tasks } = get();
-  if (!userId) return;
-  const task = tasks.find(t => t.id === taskId);
-  if (task) fsSetTask(userId, task).catch(onSyncError);
+function syncDelete(userId: string, taskId: string): void {
+  const attempt = () => {
+    useSyncStore.getState().markSaving(taskId);
+    fsDeleteTask(userId, taskId)
+      .then(() => useSyncStore.getState().markSaved(taskId))
+      .catch(e => {
+        console.error('[Firestore] syncDelete error', e);
+        useSyncStore.getState().markError(taskId, attempt);
+        useToastStore.getState().addToast({
+          type: 'error',
+          message: 'Помилка видалення. Перевірте з\'єднання.',
+          action: { label: 'Повторити', onClick: attempt },
+        });
+      });
+  };
+  attempt();
 }
 
 interface TaskStore {
@@ -133,11 +161,10 @@ export const useTaskStore = create<TaskStore>()(
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   addTask: (task) => {
-    const id = uid();
+    const id = uid('task_');
     const newTask: Task = { ...task, id, createdAt: new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
-    const { userId } = get();
-    if (userId) fsSetTask(userId, newTask);
+    syncTask(get, id);
     return id;
   },
 
@@ -149,7 +176,7 @@ export const useTaskStore = create<TaskStore>()(
   deleteTask: (id) => {
     set(s => ({ tasks: s.tasks.filter(t => t.id!==id) }));
     const { userId } = get();
-    if (userId) fsDeleteTask(userId, id).catch(onSyncError);
+    if (userId) syncDelete(userId, id);
   },
 
   moveTask: (id, newStatus) => {
@@ -165,17 +192,32 @@ export const useTaskStore = create<TaskStore>()(
   copyTaskToDate: (id, newDate) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return;
-    const newTask: Task = { ...task, id:uid(), date:newDate, status:'todo', someday:false, createdAt:new Date() };
+    const newTask: Task = { ...task, id:uid('task_'), date:newDate, status:'todo', someday:false, createdAt:new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
-    const { userId } = get();
-    if (userId) fsSetTask(userId, newTask);
+    syncTask(get, newTask.id);
   },
 
   importTasks: (tasks) => {
-    const newTasks = tasks.map(t => ({ ...t, id:uid(), createdAt:new Date() }));
+    const newTasks = tasks.map(t => ({ ...t, id:uid('import_'), createdAt:new Date() }));
     set(s => ({ tasks: [...s.tasks, ...newTasks] }));
     const { userId } = get();
-    if (userId) fsBatchSync(userId, newTasks, []).catch(onSyncError);
+    if (!userId) return;
+    const ids = newTasks.map(t => t.id);
+    ids.forEach(id => useSyncStore.getState().markSaving(id));
+    const attempt = () => {
+      fsBatchSync(userId, newTasks, [])
+        .then(() => ids.forEach(id => useSyncStore.getState().markSaved(id)))
+        .catch(e => {
+          console.error('[Firestore] importTasks error', e);
+          ids.forEach(id => useSyncStore.getState().markError(id, attempt));
+          useToastStore.getState().addToast({
+            type: 'error',
+            message: 'Помилка імпорту. Перевірте з\'єднання.',
+            action: { label: 'Повторити', onClick: attempt },
+          });
+        });
+    };
+    attempt();
   },
 
   addProject: (name) => {
@@ -190,7 +232,7 @@ export const useTaskStore = create<TaskStore>()(
     set(s => ({
       tasks: s.tasks.map(t => t.id===taskId ? {
         ...t,
-        subtasks: [...(t.subtasks||[]), { id:uid(), title, done:false, date }]
+        subtasks: [...(t.subtasks||[]), { id:uid('sub_'), title, done:false, date }]
       } : t)
     }));
     syncTask(get, taskId);
@@ -229,11 +271,10 @@ export const useTaskStore = create<TaskStore>()(
   duplicateTask: (id) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return '';
-    const newId = uid();
+    const newId = uid('task_');
     const newTask: Task = { ...task, id: newId, status: 'todo', createdAt: new Date() };
     set(s => ({ tasks: [...s.tasks, newTask] }));
-    const { userId } = get();
-    if (userId) fsSetTask(userId, newTask);
+    syncTask(get, newId);
     return newId;
   },
 

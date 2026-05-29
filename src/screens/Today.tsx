@@ -7,6 +7,7 @@ import { uk } from 'date-fns/locale';
 import { useTaskStore, Task, TaskStatus, Priority, getProjectColor } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
+import { SyncIndicator } from '../components/SyncIndicator';
 
 const TODAY = new Date();
 
@@ -81,6 +82,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
           )}
         </div>
         {task.recurring && <Repeat className="w-3 h-3 text-slate-300 shrink-0"/>}
+        <SyncIndicator taskId={task.id}/>
         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${TAG[task.tagColor] || TAG.slate}`}>{task.project}</span>
         {hasSubtasks && (
           <button onClick={e => { e.stopPropagation(); onToggleExpand(); }} className="shrink-0 text-slate-400 hover:text-indigo-500 transition-colors p-0.5">

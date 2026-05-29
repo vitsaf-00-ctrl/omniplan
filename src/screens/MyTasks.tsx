@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
+import { SyncIndicator } from '../components/SyncIndicator';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
@@ -87,6 +88,7 @@ const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClic
         )}
       </div>
       {task.recurring && <Repeat className="w-3 h-3 text-slate-300 shrink-0"/>}
+      <SyncIndicator taskId={task.id}/>
       <span className={`text-[10px] px-2 py-0.5 rounded border font-bold shrink-0 ${TAG[task.tagColor] || TAG.slate}`}>{task.project}</span>
       {!task.someday && (
         <span className="text-[10px] text-slate-400 shrink-0 hidden sm:block">{format(new Date(task.date),'d MMM',{locale:uk})}</span>

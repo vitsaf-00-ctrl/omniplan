@@ -17,27 +17,35 @@ function syncDiff(userId: string, prev: Task[], next: Task[]): Promise<void> {
   return fsBatchSync(userId, toSet, toDelete);
 }
 
+function scheduleDiffSync(userId: string, prev: Task[], next: Task[]): void {
+  const attempt = () =>
+    syncDiff(userId, prev, next).catch(e => {
+      console.error('[Firestore] undo/redo sync error', e);
+      useToastStore.getState().addToast({
+        type: 'error',
+        message: 'Помилка збереження. Перевірте з\'єднання.',
+        action: { label: 'Повторити', onClick: attempt },
+      });
+    });
+  attempt();
+}
+
 export function useUndoRedo() {
   const { undo, redo, pastStates, futureStates } = useTemporalStore(s => s);
   const userId = useTaskStore(s => s.userId);
-
-  const onSyncError = (e: unknown) => {
-    console.error('[Firestore] undo/redo sync error', e);
-    useToastStore.getState().addToast({ type: 'error', message: 'Помилка збереження. Перевірте з\'єднання.' });
-  };
 
   const handleUndo = () => {
     const prev = useTaskStore.getState().tasks;
     undo();
     const next = useTaskStore.getState().tasks;
-    if (userId) syncDiff(userId, prev, next).catch(onSyncError);
+    if (userId) scheduleDiffSync(userId, prev, next);
   };
 
   const handleRedo = () => {
     const prev = useTaskStore.getState().tasks;
     redo();
     const next = useTaskStore.getState().tasks;
-    if (userId) syncDiff(userId, prev, next).catch(onSyncError);
+    if (userId) scheduleDiffSync(userId, prev, next);
   };
 
   return {
