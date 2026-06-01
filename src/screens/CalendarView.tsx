@@ -231,18 +231,24 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
     return (h - TL_START) * HOUR_PX + (m / 60) * HOUR_PX;
   };
 
-  // Sort and assign 2-column layout to avoid timed task visual overlap
+  // Sort and assign dynamic multi-column layout to avoid timed task visual overlap
   const validTimed = timed
     .filter(t => { const h = parseInt((t.time||'').split(':')[0], 10); return !isNaN(h) && h >= TL_START && h <= TL_END; })
     .sort((a, b) => timeToTop(a.time!) - timeToTop(b.time!));
-  const colEnds = [0, 0];
-  const timedLayout = validTimed.map(t => {
+  const colEnds: number[] = [];
+  const preLayout = validTimed.map(t => {
     const top = timeToTop(t.time!);
-    const col = colEnds[0] <= top ? 0 : (colEnds[1] <= top ? 1 : 0);
-    colEnds[col] = top + 44;
+    let col = colEnds.findIndex(end => end <= top);
+    if (col === -1) { col = colEnds.length; colEnds.push(top + 44); }
+    else colEnds[col] = top + 44;
     return { t, top, col };
   });
-  const hasTwoCols = timedLayout.some(x => x.col === 1);
+  const timedLayout = preLayout.map(entry => {
+    const bottom = entry.top + 44;
+    const concurrent = preLayout.filter(o => o.top < bottom && (o.top + 44) > entry.top);
+    const totalCols = Math.max(...concurrent.map(o => o.col)) + 1;
+    return { ...entry, totalCols };
+  });
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -349,11 +355,11 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
               <div key={`half-${h}`} className="absolute w-full border-t border-dashed border-slate-50 dark:border-slate-700/20"
                 style={{top:`${(h - TL_START) * HOUR_PX + HOUR_PX / 2}px`}}/>
             ))}
-            {timedLayout.map(({ t, top, col }) => {
+            {timedLayout.map(({ t, top, col, totalCols }) => {
               const colCls = TL_COLORS[t.tagColor] || TL_COLORS.slate;
               const isDone = t.status === 'done';
-              const leftPx  = col === 0 ? '8px' : 'calc(50% + 2px)';
-              const rightPx = col === 0 ? (hasTwoCols ? 'calc(50% + 2px)' : '8px') : '8px';
+              const leftPx  = `calc(${(col / totalCols) * 100}% + 4px)`;
+              const rightPx = `calc(${((totalCols - col - 1) / totalCols) * 100}% + 4px)`;
               return (
                 <div key={t.id}
                   onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
