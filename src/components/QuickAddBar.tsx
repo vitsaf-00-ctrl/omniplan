@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { CornerDownLeft, Plus, Calendar, Clock, Repeat, Flag } from 'lucide-react';
-import { useTaskStore, PROJECTS, getProjectColor } from '../store/useTaskStore';
+import { useTaskStore, getProjectColor } from '../store/useTaskStore';
 import { useToastStore } from '../store/useToastStore';
 import { parseTaskInput } from '../utils/parseTaskInput';
 
@@ -11,12 +11,13 @@ interface Props {
 }
 
 export function QuickAddBar({ date, defaultProject, placeholder = 'Нова задача... (завтра о 14:00 #ACAT !high)' }: Props) {
+  const projects = useTaskStore(s => s.projects);
   const [title, setTitle] = useState('');
-  const [project, setProject] = useState(defaultProject || PROJECTS[0].name);
+  const [project, setProject] = useState(defaultProject || projects[0]?.name || '');
   const inputRef = useRef<HTMLInputElement>(null);
   const { addTask } = useTaskStore();
   const addToast = useToastStore(s => s.addToast);
-  const projectNames = PROJECTS.map(p => p.name);
+  const projectNames = projects.map(p => p.name);
 
   const parsed = title.trim()
     ? parseTaskInput(title, new Date(), projectNames)
@@ -34,7 +35,7 @@ export function QuickAddBar({ date, defaultProject, placeholder = 'Нова за
       project: resolvedProject,
       status: 'todo',
       date: p.date || date || new Date(),
-      tagColor: getProjectColor(resolvedProject),
+      tagColor: projects.find(p=>p.name===resolvedProject)?.color || getProjectColor(resolvedProject),
       someday: false,
       priority: p.priority,
       time: p.time,
@@ -72,7 +73,7 @@ export function QuickAddBar({ date, defaultProject, placeholder = 'Нова за
           onClick={e => e.stopPropagation()}
           className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-transparent border-none outline-none cursor-pointer shrink-0 max-w-[80px] truncate"
         >
-          {PROJECTS.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+          {projects.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
         </select>
         <button
           onClick={e => { e.stopPropagation(); submit(); }}

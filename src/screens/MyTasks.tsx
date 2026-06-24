@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useCallback, memo } from 'react';
 import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useTaskStore, Task, TaskStatus, Priority, PROJECTS } from '../store/useTaskStore';
+import { useTaskStore, Task, TaskStatus, Priority } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
 import { TaskContextMenu } from '../components/TaskContextMenu';
 import { SyncIndicator } from '../components/SyncIndicator';
@@ -228,7 +228,7 @@ function ArchiveSection({ tasks }: { tasks: Task[] }) {
 }
 
 export function MyTasks() {
-  const { tasks, activeProjectFilter, moveTaskToDate } = useTaskStore();
+  const { tasks, activeProjectFilter, moveTaskToDate, projects } = useTaskStore();
   const { setTaskModalOpen, setEditingTask } = useAppStore();
   const [statusFilter, setStatusFilter] = useState<TaskStatus|'all'>('all');
   const [projectFilter, setProjectFilter] = useState('all');
@@ -377,7 +377,7 @@ export function MyTasks() {
               className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition-all shrink-0 ${projectFilter === 'all' ? 'bg-slate-700 text-white dark:bg-slate-300 dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200'}`}>
               Всі
             </button>
-            {PROJECTS.map(p => {
+            {projects.map(p => {
               const isActive = projectFilter === p.name;
               const colorMap: Record<string, { base: string; active: string }> = {
                 blue:    { base: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',       active: 'bg-blue-500 text-white' },

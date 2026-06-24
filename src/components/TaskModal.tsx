@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Repeat, Trash2, Bell, ExternalLink, Plus, Check, Calendar } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import { useTaskStore, PROJECTS, getProjectColor, TaskStatus, SubTask, Priority } from '../store/useTaskStore';
+import { useTaskStore, getProjectColor, TaskStatus, SubTask, Priority } from '../store/useTaskStore';
 import { useToastStore } from '../store/useToastStore';
 import { format } from 'date-fns';
 
 export function TaskModal() {
   const { isTaskModalOpen, setTaskModalOpen, editingTask, setEditingTask, selectedDate } = useAppStore();
-  const { tasks, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask } = useTaskStore();
+  const { tasks, projects, addTask, updateTask, deleteTask, addSubtask, toggleSubtask, deleteSubtask } = useTaskStore();
   const addToast = useToastStore(s => s.addToast);
+  const defaultProject = projects[0]?.name || '';
 
   const [title, setTitle] = useState('');
-  const [project, setProject] = useState(PROJECTS[0].name);
+  const [project, setProject] = useState(defaultProject);
   const [status, setStatus] = useState<TaskStatus>('todo');
   const [date, setDate] = useState(format(new Date(),'yyyy-MM-dd'));
   const [someday, setSomeday] = useState(false);
@@ -36,7 +37,7 @@ export function TaskModal() {
       setSomeday(editingTask.someday||false); setPriority(editingTask.priority||null);
       setTaskTime(editingTask.time||''); setLocalSubtasks([]);
     } else {
-      setTitle(''); setProject(PROJECTS[0].name); setStatus('todo');
+      setTitle(''); setProject(defaultProject); setStatus('todo');
       setDate(format(selectedDate||new Date(),'yyyy-MM-dd'));
       setNotes(''); setRecurring(false); setRecurringType('weekly');
       setNotifyAtTime(false); setGcal(false); setSomeday(false);
@@ -66,7 +67,7 @@ export function TaskModal() {
           || taskTime !== (editingTask.time || '')
         : title.trim() !== ''
           || notes.trim() !== ''
-          || project !== PROJECTS[0].name
+          || project !== defaultProject
           || status !== 'todo'
           || someday
           || recurring
@@ -93,7 +94,7 @@ export function TaskModal() {
     const data = {
       title:title.trim(), project, status,
       date: new Date(date+'T00:00:00'),
-      tagColor: getProjectColor(project),
+      tagColor: projects.find(p=>p.name===project)?.color || getProjectColor(project),
       notes:notes.trim(), recurring, recurringType, someday,
       notifyAtTime: notifyAtTime || undefined,
       googleCalendarSync:gcal,
@@ -185,7 +186,7 @@ export function TaskModal() {
               <label className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Проєкт</label>
               <select value={project} onChange={e=>setProject(e.target.value)}
                 className="w-full text-sm font-semibold border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-2 bg-white dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                {PROJECTS.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
+                {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
               </select>
             </div>
             <div>

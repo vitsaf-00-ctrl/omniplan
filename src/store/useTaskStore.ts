@@ -44,6 +44,9 @@ const PC: Record<string, TagColor> = {
   'Орлі':'amber','Хайфом':'blue','ACAT':'emerald','ЯС':'rose','Кабін':'slate',
   'Моє':'emerald','Розробка':'indigo',
 };
+// ⚠️ Seed/default list only. For rendering project pickers, filters or chips
+// ALWAYS read the live list from the store: `useTaskStore(s => s.projects)`,
+// otherwise user-added projects (Firestore) won't show up. See Sidebar/TaskModal.
 export const PROJECTS: Project[] = [
   {id:'ai-officer',name:'AI officer',color:'indigo'},
   {id:'dis',name:'ДІС',color:'blue'},
