@@ -5,70 +5,93 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev       # Start dev server (port 3000, HMR enabled)
-npm run build     # Production build → dist/
-npm run preview   # Preview production build
-npm run lint      # TypeScript type-check (no emit)
-npm run clean     # Remove dist/ and server.js
+npm run dev          # Dev server (port 3000, HMR)
+npm run build        # Production build → dist/
+npm run preview      # Preview production build
+npm run lint         # TypeScript type-check (tsc --noEmit)
+npm run lint:eslint  # ESLint
+npm test             # Vitest (src/**/*.test.ts)
 ```
 
-No test suite exists. Type-checking via `npm run lint` is the primary correctness gate.
+Before committing run `npm run lint`, `npm run lint:eslint`, `npm test` and `npm run build`.
+A local pre-commit hook (`.git/hooks/pre-commit`, not versioned) runs tsc + ESLint.
 
-**Environment:** Create `.env.local` with `GEMINI_API_KEY=...` for AI voice features.
+No environment variables are needed. Firebase web config is in `firebase-applet-config.json`.
+Deploy: every push to `main` is auto-deployed by Vercel.
 
 ## Architecture
 
-OmniPlan is a task management SPA (React 19 + TypeScript + Tailwind v4) with Firebase backend and AI features.
+Task-management SPA: React 19 + TypeScript + Tailwind v4, Firebase Auth (Google) + Firestore, PWA (vite-plugin-pwa).
 
-**Auth flow:** Firebase Google OAuth → `AuthProvider` sets user in `useAppStore` → `FirestoreSync` subscribes to `users/{uid}/tasks` in Firestore.
+**Auth flow:** Google OAuth → `AuthProvider` sets user in `useAppStore` → `FirestoreSync` subscribes to
+`users/{uid}/tasks` and `users/{uid}/projects`. It only subscribes — it does not generate tasks.
 
-**State management (Zustand):**
-- `src/store/useAppStore.ts` — UI state: active view, theme, modal open/close, clipboard, keyboard selection
-- `src/store/useTaskStore.ts` — Task data: CRUD, filtering selectors, recurring task logic
+**State (Zustand):**
+- `src/store/useTaskStore.ts` — tasks, projects, CRUD, selectors, recurring logic. Wrapped in `zundo`
+  `temporal` (undo/redo of `tasks`, limit 50); Firestore snapshots pause the history.
+- `src/store/useAppStore.ts` — UI state: active view, theme, modals, clipboard, keyboard selection.
+- `src/store/useSyncStore.ts` — per-task save state (saving / saved / error + retry) for `SyncIndicator`.
+- `src/store/useToastStore.ts` — toasts (`ToastContainer`).
 
-Mutations update the local store then call `syncTask(get, id)` which writes to Firestore via `fsSetTask()` if a `userId` is present.
+Mutations update the store first, then `syncTask(get, id)` → `fsSetTask()` (or `syncDelete`). Errors mark the
+task in `useSyncStore` and show a toast with "Повторити".
 
-**Navigation:** `activeView` string in `useAppStore` is the primary nav mechanism (not React Router). `Dashboard.tsx` renders the appropriate screen based on this value.
-
-**Screens** (`src/screens/`) are full-page views. **Components** (`src/components/`) are reusable pieces and global overlays (modals, context menus).
+**Navigation:** `activeView` in `useAppStore` (no router). `Dashboard.tsx` lazy-loads screens, each wrapped in
+`ErrorBoundary` (reset on view change); the app root is wrapped too (`main.tsx`).
 
 ## Key Files
 
 | File | Role |
 |---|---|
-| `src/lib/taskFirestore.ts` | Firestore CRUD, real-time subscriptions, serialization (Task ↔ Firestore doc) |
-| `src/components/FirestoreSync.tsx` | Subscribes to Firestore on mount; triggers recurring task generation on first load |
-| `src/components/TaskModal.tsx` | Global create/edit modal; tracks unsaved changes and prompts on Esc |
-| `src/hooks/useKeyboardShortcuts.ts` | App-wide keyboard bindings (N, Enter, Space, Delete, Ctrl+C/X/V, T, M) |
+| `src/lib/taskFirestore.ts` | Firestore CRUD, subscriptions, `taskToDoc()` / `docToTask()` serialization |
+| `src/utils/recurrence.ts` | Recurrence date math (`nextOccurrence`, `nextInstanceDate`) — tested |
+| `src/utils/parseTaskInput.ts` | Ukrainian natural-language Quick Add parser — tested |
+| `src/components/TaskModal.tsx` | Create/edit modal; unsaved-changes guard on Esc; "stop repeating" |
+| `src/hooks/useKeyboardShortcuts.ts` | App-wide shortcuts |
+| `src/hooks/useUndoRedo.ts` | Undo/redo + Firestore batch sync of the diff |
+| `src/hooks/useReminderNotifications.ts` | Browser notifications for tasks with `time` + `notifyAtTime` (tab must be open) |
+| `src/screens/settings/*` | One file per Settings tab; `Settings.tsx` only wires them |
 | `src/utils/export.ts` | Excel/PDF export |
 
 ## Conventions & Non-Obvious Patterns
 
-**Task IDs:** `task_{Date.now()}_{nextId++}` for user-created, `import_{Date.now()}_{nextId++}` for imports, `rec_{parentId}_{dateStr}` for recurring instances.
+**Task IDs:** `task_<uuid>` (created), `import_<uuid>` (imported), `rec_<uuid>` (recurring instance).
+Legacy ids `rec_<parentId>_<yyyy-mm-dd>` may exist in old data.
 
-**Recurring tasks:** `FirestoreSync` calls `scheduleRecurringTasks()` on first load, generating instances 30 days ahead with `recurringParentId` linking them to the parent.
+**Recurring tasks — "next copy on completion":** nothing is pre-generated. When a task with `recurring: true`
+moves to `done` (via `moveTask` or `updateTask`), `handleRecurringTransition` creates exactly one next instance
+(`recurringParentId` = series root id) and stores its id in the completed task's `recurringNextId`. No copy is
+created if one already exists that day (same series, or same title+project for legacy data). Moving the task back
+out of `done` deletes the spawned copy if it is still untouched. "Stop repeating" turns `recurring` off for the
+whole series and deletes future not-done copies. Do not reintroduce bulk pre-generation — it caused duplicates.
 
-**Clipboard:** `useAppStore` tracks `clipboardTaskId` + `clipboardMode` (copy/cut). Paste duplicates the task; cut also deletes the original.
+**Projects:** `PROJECTS` in `useTaskStore` is only a seed list. For pickers/filters always read
+`useTaskStore(s => s.projects)` (live, from Firestore).
 
-**Context menu:** `TaskContextMenu` reads selected task from store — it is not passed as props.
+**Firestore serialization:** add every new `Task` field to both `taskToDoc()` and `docToTask()` — a field missing
+from either is silently lost.
 
-**"Someday" tasks:** Tasks with `someday: true` are hidden from all date-based views (Today, Calendar).
+**Clipboard:** `useAppStore` tracks `clipboardTaskId` + `clipboardMode` (copy/cut).
 
-**Date serialization:** `taskToDoc()` converts `Date` → Firestore `Timestamp`; `docToTask()` reverses this. Always go through these functions when reading/writing Firestore.
+**Context menu:** `TaskContextMenu` reads the selected task from the store, not props.
 
-**Keyboard shortcuts:** Only fire when no `<input>` or `<textarea>` is focused. `__setKeyboardSelectedId` / `__notifySelectedId` are window globals used to sync selection state with the keyboard handler.
+**"Someday" tasks:** `someday: true` hides a task from all date-based views.
 
-**Mobile:** Sidebar is hidden on small screens; `MobileTabBar` provides bottom navigation. Touch long-press (500 ms) on a task row opens the context menu.
+**Keyboard shortcuts:** fire only when no input/textarea is focused. `window.__setKeyboardSelectedId` /
+`__notifySelectedId` sync selection with the handler.
+
+**Mobile:** sidebar hidden on small screens; `MobileTabBar` is the bottom nav; long-press (500 ms) opens the
+context menu.
+
+**Personal data:** never commit task exports (`*.csv` is git-ignored).
 
 ## UI Language
 
-All UI text is in **Ukrainian**. Use `date-fns` with the `uk` locale for date formatting. Status labels: "Готово", "В процесі", "Заплановано".
+All UI text is **Ukrainian**. Use `date-fns` with the `uk` locale. Status labels: "Заплановано", "В процесі",
+"Готово".
 
 ## Tech Stack Highlights
 
-- **Tailwind v4** via `@tailwindcss/vite` — custom theme in `src/index.css`; dark mode via `.dark` class on `<html>`
-- **Motion** (Framer Motion alternative) for animations
-- **Lucide React** for icons
-- **@hello-pangea/dnd** for drag-and-drop
-- **@google/genai** (Gemini) for voice input (`VoiceInputWidget`)
-- **XLSX** for Excel export
+- Tailwind v4 via `@tailwindcss/vite`; theme in `src/index.css`; dark mode via `.dark` on `<html>`
+- Lucide React icons; `@hello-pangea/dnd` for drag-and-drop
+- `xlsx` for Excel import/export — heavy chunk; keep it out of the main bundle (only ImportModal and the lazy Statistics screen import it)

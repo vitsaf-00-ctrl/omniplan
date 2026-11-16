@@ -7,3 +7,8 @@ coverage/
 .env*
 !.env.example
 verify-screenshots/
+
+# Personal data exports — never commit
+omniplan_tasks.csv
+*.csv
+!src/**/*.csv

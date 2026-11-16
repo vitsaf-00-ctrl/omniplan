@@ -1,20 +1,25 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# OmniPlan
 
-# Run and deploy your AI Studio app
+Персональний планувальник задач: Мій день, Календар (місяць / тиждень / таймлайн / день),
+Дошка, Мої завдання, Статистика, Фокус-режим, повторювані задачі, Quick Add з парсером
+української мови.
 
-This contains everything you need to run your app locally.
+**Stack:** React 19 · TypeScript · Vite · Tailwind v4 · Zustand · Firebase Auth + Firestore · Vercel
 
-View your app in AI Studio: https://ai.studio/apps/846c7243-98bd-497d-8607-abdd25f234ad
+## Запуск локально
 
-## Run Locally
+```bash
+npm install
+npm run dev        # http://localhost:3000
+```
 
-**Prerequisites:**  Node.js
+## Перевірки
 
+```bash
+npm run lint         # TypeScript
+npm run lint:eslint  # ESLint
+npm test             # Vitest
+npm run build        # production build
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Деплой: кожен push у `main` автоматично деплоїться на Vercel.

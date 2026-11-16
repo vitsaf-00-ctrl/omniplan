@@ -7,6 +7,7 @@ import { TaskModal } from '../components/TaskModal';
 import { SearchOverlay } from '../components/SearchOverlay';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useReminderNotifications } from '../hooks/useReminderNotifications';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const Today         = lazy(() => import('./Today').then(m => ({ default: m.Today })));
 const CalendarView  = lazy(() => import('./CalendarView').then(m => ({ default: m.CalendarView })));
@@ -32,9 +33,11 @@ export function Dashboard() {
 
   if (activeView === 'focus') {
     return (
-      <Suspense fallback={<ScreenFallback/>}>
-        <FocusMode/>
-      </Suspense>
+      <ErrorBoundary resetKey={activeView}>
+        <Suspense fallback={<ScreenFallback/>}>
+          <FocusMode/>
+        </Suspense>
+      </ErrorBoundary>
     );
   }
 
@@ -44,6 +47,7 @@ export function Dashboard() {
       <main className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
         <Header/>
         <div className="flex-1 p-3 md:p-5 overflow-hidden relative pb-16 lg:pb-0">
+          <ErrorBoundary resetKey={activeView}>
           <Suspense fallback={<ScreenFallback/>}>
             {activeView === 'today'    && <Today/>}
             {activeView === 'calendar' && <CalendarView/>}
@@ -53,6 +57,7 @@ export function Dashboard() {
             {activeView === 'settings' && <Settings/>}
             {activeView === 'stats'    && <Statistics/>}
           </Suspense>
+          </ErrorBoundary>
         </div>
       </main>
       <TaskModal/>
