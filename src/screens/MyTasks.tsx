@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, memo } from 'react';
-import { CheckCircle2, Clock, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
+import { InProgressIcon } from '../components/InProgressIcon';
+import { CheckCircle2, Circle, Repeat, Plus, Search, ChevronDown, Sparkles, GripVertical, Archive } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus, Priority } from '../store/useTaskStore';
 import { useAppStore } from '../store/useAppStore';
@@ -67,7 +68,7 @@ const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClic
         className="shrink-0"
       >
         {task.status === 'done' ? <CheckCircle2 className="w-5 h-5 text-emerald-500"/>
-          : isIP ? <Clock className="w-5 h-5 text-amber-500 animate-pulse"/>
+          : isIP ? <InProgressIcon className="w-5 h-5 text-amber-600 dark:text-amber-400"/>
           : <Circle className="w-5 h-5 text-slate-300 hover:text-indigo-400 transition-colors"/>}
       </button>
       <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor] || 'bg-slate-400'}`}/>

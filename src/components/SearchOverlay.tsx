@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, CheckCircle2, Circle, Clock, Tag } from 'lucide-react';
+import { InProgressIcon } from './InProgressIcon';
+import { Search, X, CheckCircle2, Circle, Tag } from 'lucide-react';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTaskStore, Task } from '@/src/store/useTaskStore';
 import { format } from 'date-fns';
@@ -7,7 +8,7 @@ import { uk } from 'date-fns/locale';
 
 const STATUS_ICON = {
   done: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0"/>,
-  in_progress: <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0"/>,
+  in_progress: <InProgressIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"/>,
   todo: <Circle className="w-3.5 h-3.5 text-slate-400 shrink-0"/>,
 };
 

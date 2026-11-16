@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { ChevronLeft, ChevronRight, Upload, Plus, Repeat, Clock, CheckCircle2, Circle } from 'lucide-react';
+import { InProgressIcon } from '../components/InProgressIcon';
+import { ChevronLeft, ChevronRight, Upload, Plus, Repeat, CheckCircle2, Circle } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 
 import { format, startOfWeek, addDays, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, endOfWeek, isSameMonth, addMonths } from 'date-fns';
@@ -33,7 +34,9 @@ const PILL_COLORS: Record<string,string> = {
   amber:'bg-amber-400 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-400 text-white',
 };
 const PILL_DONE = 'bg-slate-200 text-slate-400 line-through';
-const PILL_IP = 'bg-amber-400 text-white ring-2 ring-amber-300';
+// In progress keeps the project colour and adds moving stripes + ◐ icon, so it
+// can't be confused with an amber project (Орлі) or the theme accent.
+const IP_STRIPES = 'ip-stripes';
 
 const TAG_BG: Record<string,string> = {
   blue:'border-l-blue-500 bg-blue-50 text-blue-900',
@@ -59,8 +62,11 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
-  const pill = isDone ? PILL_DONE : isIP ? PILL_IP : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
-  const dotCls = isDone ? 'bg-slate-300 opacity-60' : isIP ? 'bg-amber-400' : (COLOR_DOT[task.tagColor] || COLOR_DOT.slate);
+  const base = PILL_COLORS[task.tagColor] || PILL_COLORS.slate;
+  const pill = isDone ? PILL_DONE : isIP ? `${base} ${IP_STRIPES}` : base;
+  const dotCls = isDone ? 'bg-slate-300 opacity-60'
+    : isIP ? `${COLOR_DOT[task.tagColor] || COLOR_DOT.slate} ring-2 ring-offset-1 ring-slate-700 dark:ring-white animate-pulse`
+    : (COLOR_DOT[task.tagColor] || COLOR_DOT.slate);
 
   const handleDrag = (e: React.DragEvent) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); };
   const handleDbl  = (e: React.MouseEvent) => { e.stopPropagation(); setEditingTask(task); setTaskModalOpen(true); };
@@ -81,7 +87,7 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
         className={`hidden sm:flex px-1.5 py-0.5 rounded-md text-[10px] font-bold cursor-pointer select-none items-center gap-1 transition-all min-w-0
           ${isSelected ? 'ring-4 ring-indigo-600 shadow-lg bg-indigo-100 text-indigo-900' : pill}`}
       >
-        {isIP && <Clock className="w-2.5 h-2.5 shrink-0 animate-pulse"/>}
+        {isIP && <InProgressIcon className="w-3 h-3"/>}
         {task.recurring && <Repeat className="w-2.5 h-2.5 shrink-0 opacity-70"/>}
         <span className="truncate min-w-0 flex-1">{task.title}</span>
       </div>
@@ -141,7 +147,7 @@ function WeekTaskCard({ task }: { task:Task }) {
         onContextMenu={e=>{e.preventDefault();setCtx({x:e.clientX,y:e.clientY,task});}}
         className="flex items-center gap-2 py-1.5 border-b border-slate-100 dark:border-slate-700 group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 transition-colors select-none">
         <button onClick={e=>{e.stopPropagation();moveTask(task.id,task.status==='done'?'todo':'done');}} className="shrink-0">
-          {isDone?<CheckCircle2 className="w-4 h-4 text-emerald-500"/>:isIP?<Clock className="w-4 h-4 text-amber-500 animate-pulse"/>:<Circle className="w-4 h-4 text-slate-300"/>}
+          {isDone?<CheckCircle2 className="w-4 h-4 text-emerald-500"/>:isIP?<InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/>:<Circle className="w-4 h-4 text-slate-300"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor]||'bg-slate-400'}`}/>
         <p className={`text-[13px] sm:text-xs font-medium flex-1 truncate ${isDone?'line-through text-slate-400':isIP?'text-amber-800':'text-slate-700 dark:text-slate-200'}`}>{task.title}</p>
@@ -189,7 +195,7 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
             onDoubleClick={()=>{setEditingTask(t);setTaskModalOpen(true);}}>
             <div className="flex items-center gap-2 mb-1">
               <button onClick={e=>{e.stopPropagation();moveTask(t.id,t.status==='done'?'todo':'done');}} className="shrink-0">
-                {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<Clock className="w-3.5 h-3.5 text-amber-500 animate-pulse"/>:<Circle className="w-3.5 h-3.5 text-slate-300 hover:text-emerald-500 transition-colors"/>}
+                {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<InProgressIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"/>:<Circle className="w-3.5 h-3.5 text-slate-300 hover:text-emerald-500 transition-colors"/>}
               </button>
               {t.recurring&&<Repeat className="w-3 h-3 opacity-50"/>}
               <button onClick={()=>{setEditingTask(t);setTaskModalOpen(true);}} className="text-[10px] opacity-50 hover:opacity-100 ml-auto font-bold">редаг.</button>
@@ -322,8 +328,8 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
             {timeless.map(t => (
               <div key={t.id}
                 onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] ${TL_COLORS[t.tagColor] || TL_COLORS.slate}`}>
-                {t.title}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] inline-flex items-center gap-1 ${TL_COLORS[t.tagColor] || TL_COLORS.slate} ${t.status === 'in_progress' ? 'ip-stripes-soft' : ''}`}>
+                {t.status === 'in_progress' && <InProgressIcon className="w-3 h-3"/>}{t.title}
               </div>
             ))}
           </div>
@@ -358,14 +364,17 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
             {timedLayout.map(({ t, top, col, totalCols }) => {
               const colCls = TL_COLORS[t.tagColor] || TL_COLORS.slate;
               const isDone = t.status === 'done';
+              const isIP = t.status === 'in_progress';
               const leftPx  = `calc(${(col / totalCols) * 100}% + 4px)`;
               const rightPx = `calc(${((totalCols - col - 1) / totalCols) * 100}% + 4px)`;
               return (
                 <div key={t.id}
                   onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
-                  className={`absolute rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${colCls} ${isDone ? 'opacity-50' : ''}`}
+                  className={`absolute rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${colCls} ${isDone ? 'opacity-50' : ''} ${isIP ? 'ip-stripes-soft' : ''}`}
                   style={{top:`${top}px`, minHeight:'44px', zIndex:1, left:leftPx, right:rightPx}}>
-                  <p className={`text-xs font-bold leading-tight ${isDone ? 'line-through' : ''}`}>{t.title}</p>
+                  <p className={`text-xs font-bold leading-tight flex items-center gap-1 ${isDone ? 'line-through' : ''}`}>
+                    {isIP && <InProgressIcon className="w-3 h-3"/>}{t.title}
+                  </p>
                   <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time} · {t.project}</p>
                   {t.subtasks && t.subtasks.length > 0 && (
                     <div className="flex items-center gap-1 mt-1">

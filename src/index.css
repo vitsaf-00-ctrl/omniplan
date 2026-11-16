@@ -87,3 +87,27 @@
 :root[data-palette="claude"].dark [data-sidebar] {
   --color-slate-900: #1f1e1d;
 }
+
+/* ── "In progress" indicators (see InProgressIcon) ─────────────────────────── */
+@keyframes ip-spin { to { transform: rotate(360deg); } }
+.ip-spin { animation: ip-spin 3s linear infinite; transform-origin: center; }
+
+/* Moving diagonal stripes over the task's own colour — a progress-bar cue that
+   doesn't depend on hue. Solid pills use white stripes; tinted cards use soft ones. */
+@keyframes ip-stripes { to { background-position: 17px 0; } }
+.ip-stripes {
+  background-image: repeating-linear-gradient(-45deg,
+    rgb(255 255 255 / 0.28) 0 6px, transparent 6px 12px);
+  background-size: 17px 17px;
+  animation: ip-stripes 1.2s linear infinite;
+}
+.ip-stripes-soft {
+  background-image: repeating-linear-gradient(-45deg,
+    color-mix(in srgb, currentColor 14%, transparent) 0 6px, transparent 6px 12px);
+  background-size: 17px 17px;
+  animation: ip-stripes 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-spin, .ip-stripes, .ip-stripes-soft { animation: none; }
+}

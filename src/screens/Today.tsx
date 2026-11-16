@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo } from 'react';
-import { CheckCircle2, Clock, Circle, Repeat, Star, GripVertical, ChevronDown, Check, X, Sparkles, Plus } from 'lucide-react';
+import { InProgressIcon } from '../components/InProgressIcon';
+import { CheckCircle2, Circle, Repeat, Star, GripVertical, ChevronDown, Check, X, Sparkles, Plus } from 'lucide-react';
 import { QuickAddBar } from '../components/QuickAddBar';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { format } from 'date-fns';
@@ -230,7 +231,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
       >
         <button onClick={e => { e.stopPropagation(); moveTask(task.id, task.status === 'done' ? 'todo' : task.status === 'in_progress' ? 'done' : 'in_progress'); }} className="shrink-0">
           {task.status === 'done' ? <CheckCircle2 className="w-5 h-5 text-emerald-500"/>
-            : isIP ? <Clock className="w-5 h-5 text-amber-500 animate-pulse"/>
+            : isIP ? <InProgressIcon className="w-5 h-5 text-amber-600 dark:text-amber-400"/>
             : <Circle className="w-5 h-5 text-slate-300 hover:text-indigo-400 transition-colors"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor] || 'bg-slate-400'}`}/>
@@ -497,7 +498,7 @@ export function Today() {
           {inprog.length > 0 && (
             <div>
               <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                <Clock className="w-3 h-3"/> В процесі ({inprog.length})
+                <InProgressIcon className="w-3 h-3"/> В процесі ({inprog.length})
               </p>
               <Droppable droppableId="inprog">
                 {(provided, snapshot) => (

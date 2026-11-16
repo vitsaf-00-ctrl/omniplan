@@ -1,4 +1,5 @@
-import { LayoutGrid, List, Circle, Clock, CheckCircle2, Plus, Repeat, Table, GripVertical, MoreVertical } from 'lucide-react';
+import { LayoutGrid, List, Circle, CheckCircle2, Plus, Repeat, Table, GripVertical, MoreVertical } from 'lucide-react';
+import { InProgressIcon } from '../components/InProgressIcon';
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useTaskStore, Task, TaskStatus } from '../store/useTaskStore';
@@ -47,7 +48,7 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
         <div className="flex items-start gap-2.5">
           <div className="shrink-0 mt-0.5">
             {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500"/>
-              : isIP ? <Clock className="w-4 h-4 text-amber-500 animate-pulse"/>
+              : isIP ? <InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/>
               : <Circle className="w-4 h-4 text-slate-300"/>}
           </div>
           <p className={`flex-1 text-sm font-semibold leading-snug min-w-0 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
@@ -77,7 +78,7 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
       <div className="hidden md:block p-3">
         <div className="flex items-center gap-1.5 mb-1.5">
           {task.status === 'done' ? <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
-            : isIP ? <Clock className="w-3 h-3 text-amber-500 animate-pulse"/>
+            : isIP ? <InProgressIcon className="w-3 h-3 text-amber-600 dark:text-amber-400"/>
             : <Circle className="w-3 h-3 text-slate-300"/>}
           <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
             {task.status === 'done' ? 'ГОТОВО' : isIP ? 'В ПРОЦЕСІ' : 'ЗАПЛАНОВАНО'}
@@ -146,7 +147,7 @@ function TableView({ tasks, onEdit, onMove }: { tasks:Task[]; onEdit:(t:Task)=>v
                     <button onClick={e => { e.stopPropagation(); onMove(t.id, t.status === 'done' ? 'todo' : t.status === 'in_progress' ? 'done' : 'in_progress'); }}
                       className={`text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 whitespace-nowrap
                         ${isIP ? 'bg-amber-100 text-amber-700' : t.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {t.status === 'done' ? <><CheckCircle2 className="w-3 h-3"/> Готово</> : isIP ? <><Clock className="w-3 h-3 animate-pulse"/> В процесі</> : <><Circle className="w-3 h-3"/> Заплановано</>}
+                      {t.status === 'done' ? <><CheckCircle2 className="w-3 h-3"/> Готово</> : isIP ? <><InProgressIcon className="w-3 h-3"/> В процесі</> : <><Circle className="w-3 h-3"/> Заплановано</>}
                     </button>
                   </td>
                   <td className="px-3 py-2.5 hidden sm:table-cell">
@@ -365,7 +366,7 @@ export function ProjectBoard() {
                   ${t.status === 'in_progress' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200'
                     : selectedId === t.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200'
                     : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}`}>
-                {t.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/> : t.status === 'in_progress' ? <Clock className="w-4 h-4 text-amber-500 animate-pulse shrink-0"/> : <Circle className="w-4 h-4 text-slate-300 shrink-0"/>}
+                {t.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/> : t.status === 'in_progress' ? <InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/> : <Circle className="w-4 h-4 text-slate-300 shrink-0"/>}
                 <p className={`flex-1 text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : t.status === 'in_progress' ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
                 {t.recurring && <Repeat className="w-3 h-3 text-slate-300 shrink-0"/>}
                 {(t.subtasks || []).length > 0 && <span className="text-[9px] text-slate-400 font-bold">✓{(t.subtasks || []).filter(s => s.done).length}/{(t.subtasks || []).length}</span>}
