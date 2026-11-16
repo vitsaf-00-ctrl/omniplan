@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { AlertTriangle, RotateCcw, RefreshCw } from 'lucide-react';
+import { isChunkLoadError, reloadOnceForNewVersion } from '../lib/chunkReload';
 
 interface Props {
   children: ReactNode;
@@ -11,6 +12,8 @@ interface Props {
 
 interface State {
   error: Error | null;
+  /** True while reloading to pick up a newly deployed version. */
+  updating?: boolean;
 }
 
 /**
@@ -25,16 +28,30 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
+    if (isChunkLoadError(error) && reloadOnceForNewVersion()) {
+      this.setState({ updating: true });
+      return;
+    }
     console.error('[ErrorBoundary]', error, info.componentStack);
   }
 
   componentDidUpdate(prev: Props): void {
-    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null });
+    if (this.state.error && prev.resetKey !== this.props.resetKey) this.setState({ error: null, updating: false });
   }
 
   render() {
-    const { error } = this.state;
+    const { error, updating } = this.state;
     if (!error) return this.props.children;
+
+    if (updating) {
+      return (
+        <div className={`flex items-center justify-center gap-2 text-sm text-slate-500 ${this.props.fullPage ? 'min-h-screen' : 'h-full'}`}>
+          <RefreshCw className="w-4 h-4 animate-spin" /> Оновлення до нової версії…
+        </div>
+      );
+    }
+
+    const isStale = isChunkLoadError(error);
 
     return (
       <div className={`flex items-center justify-center p-6 ${this.props.fullPage ? 'min-h-screen bg-slate-50 dark:bg-slate-900' : 'h-full'}`}>
@@ -43,16 +60,22 @@ export class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="w-6 h-6 text-rose-500" />
           </div>
           <div className="space-y-1">
-            <p className="text-base font-black text-slate-800 dark:text-white">Щось пішло не так</p>
+            <p className="text-base font-black text-slate-800 dark:text-white">
+              {isStale ? 'Доступна нова версія' : 'Щось пішло не так'}
+            </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Цей екран не вдалося показати. Ваші задачі збережені — спробуйте ще раз або перезавантажте сторінку.
+              {isStale
+                ? 'Застосунок оновився, поки сторінка була відкрита. Перезавантажте сторінку — задачі збережені.'
+                : 'Цей екран не вдалося показати. Ваші задачі збережені — спробуйте ще раз або перезавантажте сторінку.'}
             </p>
           </div>
-          <p className="text-[10px] font-mono text-slate-400 bg-slate-50 dark:bg-slate-900/60 rounded-lg px-3 py-2 break-words">
-            {error.message}
-          </p>
+          {!isStale && (
+            <p className="text-[10px] font-mono text-slate-400 bg-slate-50 dark:bg-slate-900/60 rounded-lg px-3 py-2 break-words">
+              {error.message}
+            </p>
+          )}
           <div className="flex gap-2 justify-center">
-            {!this.props.fullPage && (
+            {!this.props.fullPage && !isStale && (
               <button
                 onClick={() => this.setState({ error: null })}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
