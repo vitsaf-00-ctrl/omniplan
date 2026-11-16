@@ -34,9 +34,10 @@ const PILL_COLORS: Record<string,string> = {
   amber:'bg-amber-400 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-400 text-white',
 };
 const PILL_DONE = 'bg-slate-200 text-slate-400 line-through';
-// In progress keeps the project colour and adds moving stripes + ◐ icon, so it
-// can't be confused with an amber project (Орлі) or the theme accent.
-const IP_STRIPES = 'ip-stripes';
+// In progress: terracotta + moving stripes + ◐ icon — one constant colour in
+// every theme, distinct from all project colours (incl. amber Орлі).
+const IP_PILL = 'bg-progress-600 text-white ip-stripes';
+const IP_TL = 'border-progress-500 bg-progress-500/20 text-progress-900 dark:text-progress-100 ip-stripes-soft';
 
 const TAG_BG: Record<string,string> = {
   blue:'border-l-blue-500 bg-blue-50 text-blue-900',
@@ -63,9 +64,9 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
   const base = PILL_COLORS[task.tagColor] || PILL_COLORS.slate;
-  const pill = isDone ? PILL_DONE : isIP ? `${base} ${IP_STRIPES}` : base;
+  const pill = isDone ? PILL_DONE : isIP ? IP_PILL : base;
   const dotCls = isDone ? 'bg-slate-300 opacity-60'
-    : isIP ? `${COLOR_DOT[task.tagColor] || COLOR_DOT.slate} ring-2 ring-offset-1 ring-slate-700 dark:ring-white animate-pulse`
+    : isIP ? 'bg-progress-600 ring-2 ring-offset-1 ring-progress-300 animate-pulse'
     : (COLOR_DOT[task.tagColor] || COLOR_DOT.slate);
 
   const handleDrag = (e: React.DragEvent) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); };
@@ -147,10 +148,10 @@ function WeekTaskCard({ task }: { task:Task }) {
         onContextMenu={e=>{e.preventDefault();setCtx({x:e.clientX,y:e.clientY,task});}}
         className="flex items-center gap-2 py-1.5 border-b border-slate-100 dark:border-slate-700 group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 transition-colors select-none">
         <button onClick={e=>{e.stopPropagation();moveTask(task.id,task.status==='done'?'todo':'done');}} className="shrink-0">
-          {isDone?<CheckCircle2 className="w-4 h-4 text-emerald-500"/>:isIP?<InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/>:<Circle className="w-4 h-4 text-slate-300"/>}
+          {isDone?<CheckCircle2 className="w-4 h-4 text-emerald-500"/>:isIP?<InProgressIcon className="w-4 h-4 text-progress-600 dark:text-progress-400"/>:<Circle className="w-4 h-4 text-slate-300"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor]||'bg-slate-400'}`}/>
-        <p className={`text-[13px] sm:text-xs font-medium flex-1 truncate ${isDone?'line-through text-slate-400':isIP?'text-amber-800':'text-slate-700 dark:text-slate-200'}`}>{task.title}</p>
+        <p className={`text-[13px] sm:text-xs font-medium flex-1 truncate ${isDone?'line-through text-slate-400':isIP?'text-progress-800':'text-slate-700 dark:text-slate-200'}`}>{task.title}</p>
         {task.recurring&&<Repeat className="w-2.5 h-2.5 text-slate-300 shrink-0"/>}
       </div>
       {ctx&&<TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={()=>setCtx(null)}/>}
@@ -195,7 +196,7 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
             onDoubleClick={()=>{setEditingTask(t);setTaskModalOpen(true);}}>
             <div className="flex items-center gap-2 mb-1">
               <button onClick={e=>{e.stopPropagation();moveTask(t.id,t.status==='done'?'todo':'done');}} className="shrink-0">
-                {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<InProgressIcon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400"/>:<Circle className="w-3.5 h-3.5 text-slate-300 hover:text-emerald-500 transition-colors"/>}
+                {t.status==='done'?<CheckCircle2 className="w-3.5 h-3.5 text-emerald-500"/>:t.status==='in_progress'?<InProgressIcon className="w-3.5 h-3.5 text-progress-600 dark:text-progress-400"/>:<Circle className="w-3.5 h-3.5 text-slate-300 hover:text-emerald-500 transition-colors"/>}
               </button>
               {t.recurring&&<Repeat className="w-3 h-3 opacity-50"/>}
               <button onClick={()=>{setEditingTask(t);setTaskModalOpen(true);}} className="text-[10px] opacity-50 hover:opacity-100 ml-auto font-bold">редаг.</button>
@@ -328,7 +329,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
             {timeless.map(t => (
               <div key={t.id}
                 onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] inline-flex items-center gap-1 ${TL_COLORS[t.tagColor] || TL_COLORS.slate} ${t.status === 'in_progress' ? 'ip-stripes-soft' : ''}`}>
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] inline-flex items-center gap-1 ${t.status === 'in_progress' ? IP_TL : (TL_COLORS[t.tagColor] || TL_COLORS.slate)}`}>
                 {t.status === 'in_progress' && <InProgressIcon className="w-3 h-3"/>}{t.title}
               </div>
             ))}
@@ -370,7 +371,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
               return (
                 <div key={t.id}
                   onClick={e => { e.stopPropagation(); setEditingTask(t); setTaskModalOpen(true); }}
-                  className={`absolute rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${colCls} ${isDone ? 'opacity-50' : ''} ${isIP ? 'ip-stripes-soft' : ''}`}
+                  className={`absolute rounded-lg border-l-[3px] px-2.5 py-1.5 cursor-pointer hover:brightness-95 transition-all shadow-sm ${isIP ? IP_TL : colCls} ${isDone ? 'opacity-50' : ''}`}
                   style={{top:`${top}px`, minHeight:'44px', zIndex:1, left:leftPx, right:rightPx}}>
                   <p className={`text-xs font-bold leading-tight flex items-center gap-1 ${isDone ? 'line-through' : ''}`}>
                     {isIP && <InProgressIcon className="w-3 h-3"/>}{t.title}

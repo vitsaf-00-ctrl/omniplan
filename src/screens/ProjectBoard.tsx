@@ -31,7 +31,7 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
   const isIP = task.status === 'in_progress';
   const sub = task.subtasks || [], subDone = sub.filter(s => s.done).length;
   const cardCls = `rounded-xl shadow-sm border-b-2 transition-all cursor-pointer select-none
-    ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-b-amber-400 ring-2 ring-amber-300/30'
+    ${isIP ? 'bg-progress-50 dark:bg-progress-900/20 border-b-progress-400 ring-2 ring-progress-300/30'
       : task.status === 'done' ? 'bg-slate-50 dark:bg-slate-800/50 border-b-emerald-400 opacity-70'
       : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-b-indigo-400 ring-2 ring-indigo-200'
       : 'bg-white dark:bg-slate-800 border-b-indigo-200 hover:shadow-md'}`;
@@ -48,10 +48,10 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
         <div className="flex items-start gap-2.5">
           <div className="shrink-0 mt-0.5">
             {task.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500"/>
-              : isIP ? <InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/>
+              : isIP ? <InProgressIcon className="w-4 h-4 text-progress-600 dark:text-progress-400"/>
               : <Circle className="w-4 h-4 text-slate-300"/>}
           </div>
-          <p className={`flex-1 text-sm font-semibold leading-snug min-w-0 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+          <p className={`flex-1 text-sm font-semibold leading-snug min-w-0 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-progress-900 dark:text-progress-100' : 'text-slate-800 dark:text-white'}`}>
             {task.title}
           </p>
           <button onClick={e => { e.stopPropagation(); onContextMenu(e); }}
@@ -78,9 +78,9 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
       <div className="hidden md:block p-3">
         <div className="flex items-center gap-1.5 mb-1.5">
           {task.status === 'done' ? <CheckCircle2 className="w-3 h-3 text-emerald-500"/>
-            : isIP ? <InProgressIcon className="w-3 h-3 text-amber-600 dark:text-amber-400"/>
+            : isIP ? <InProgressIcon className="w-3 h-3 text-progress-600 dark:text-progress-400"/>
             : <Circle className="w-3 h-3 text-slate-300"/>}
-          <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-amber-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <span className={`text-[9px] font-black tracking-widest uppercase flex-1 ${isIP ? 'text-progress-600' : task.status === 'done' ? 'text-emerald-600' : 'text-slate-400'}`}>
             {task.status === 'done' ? 'ГОТОВО' : isIP ? 'В ПРОЦЕСІ' : 'ЗАПЛАНОВАНО'}
           </span>
           {task.recurring && <Repeat className="w-2.5 h-2.5 text-slate-300"/>}
@@ -90,7 +90,7 @@ function TaskCard({ task, isSelected, onSelect, onDoubleClick, onContextMenu, no
           </button>
           <GripVertical className="w-3 h-3 text-slate-200 opacity-50"/>
         </div>
-        <p className={`text-sm font-semibold mb-2 leading-snug ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+        <p className={`text-sm font-semibold mb-2 leading-snug ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-progress-900 dark:text-progress-100' : 'text-slate-800 dark:text-white'}`}>
           {task.title}
         </p>
         {sub.length > 0 && (
@@ -132,13 +132,13 @@ function TableView({ tasks, onEdit, onMove }: { tasks:Task[]; onEdit:(t:Task)=>v
               return (
                 <tr key={t.id}
                   className={`border-b border-slate-100 dark:border-slate-700 cursor-pointer transition-colors group
-                    ${isIP ? 'bg-amber-50/50 dark:bg-amber-900/10 hover:bg-amber-50' : t.status === 'done' ? 'opacity-50 hover:bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
+                    ${isIP ? 'bg-progress-50/50 dark:bg-progress-900/10 hover:bg-progress-50' : t.status === 'done' ? 'opacity-50 hover:bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}
                   onDoubleClick={() => onEdit(t)}
                   onContextMenu={e => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, task: t }); }}>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[t.tagColor] || 'bg-slate-400'}`}/>
-                      <span className={`font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>{t.title}</span>
+                      <span className={`font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-progress-900 dark:text-progress-100' : 'text-slate-800 dark:text-white'}`}>{t.title}</span>
                       {t.recurring && <Repeat className="w-3 h-3 text-slate-300"/>}
                       {sub.length > 0 && <span className="text-[9px] text-slate-400 font-bold">✓{subDone}/{sub.length}</span>}
                     </div>
@@ -146,7 +146,7 @@ function TableView({ tasks, onEdit, onMove }: { tasks:Task[]; onEdit:(t:Task)=>v
                   <td className="px-3 py-2.5">
                     <button onClick={e => { e.stopPropagation(); onMove(t.id, t.status === 'done' ? 'todo' : t.status === 'in_progress' ? 'done' : 'in_progress'); }}
                       className={`text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 whitespace-nowrap
-                        ${isIP ? 'bg-amber-100 text-amber-700' : t.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
+                        ${isIP ? 'bg-progress-100 text-progress-700' : t.status === 'done' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                       {t.status === 'done' ? <><CheckCircle2 className="w-3 h-3"/> Готово</> : isIP ? <><InProgressIcon className="w-3 h-3"/> В процесі</> : <><Circle className="w-3 h-3"/> Заплановано</>}
                     </button>
                   </td>
@@ -252,7 +252,7 @@ export function ProjectBoard() {
 
   const cols = [
     { status: 'todo' as TaskStatus, title: 'Беклог', tasks: getColTasks('todo', backlog), badge: 'bg-slate-200 text-slate-600' },
-    { status: 'in_progress' as TaskStatus, title: 'В процесі', tasks: getColTasks('in_progress', inprog), badge: 'bg-amber-100 text-amber-700' },
+    { status: 'in_progress' as TaskStatus, title: 'В процесі', tasks: getColTasks('in_progress', inprog), badge: 'bg-progress-100 text-progress-700' },
     { status: 'done' as TaskStatus, title: 'Завершено', tasks: getColTasks('done', done), badge: 'bg-emerald-100 text-emerald-700' },
   ];
 
@@ -363,11 +363,11 @@ export function ProjectBoard() {
                 onClick={e => { e.stopPropagation(); setSelectedId(t.id === selectedId ? null : t.id); }}
                 onDoubleClick={e => { e.stopPropagation(); edit(t); }}
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer select-none
-                  ${t.status === 'in_progress' ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200'
+                  ${t.status === 'in_progress' ? 'bg-progress-50 dark:bg-progress-900/20 border-progress-200'
                     : selectedId === t.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200'
                     : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}`}>
-                {t.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/> : t.status === 'in_progress' ? <InProgressIcon className="w-4 h-4 text-amber-600 dark:text-amber-400"/> : <Circle className="w-4 h-4 text-slate-300 shrink-0"/>}
-                <p className={`flex-1 text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : t.status === 'in_progress' ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
+                {t.status === 'done' ? <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0"/> : t.status === 'in_progress' ? <InProgressIcon className="w-4 h-4 text-progress-600 dark:text-progress-400"/> : <Circle className="w-4 h-4 text-slate-300 shrink-0"/>}
+                <p className={`flex-1 text-sm font-semibold ${t.status === 'done' ? 'line-through text-slate-400' : t.status === 'in_progress' ? 'text-progress-900 dark:text-progress-100' : 'text-slate-800 dark:text-white'}`}>{t.title}</p>
                 {t.recurring && <Repeat className="w-3 h-3 text-slate-300 shrink-0"/>}
                 {(t.subtasks || []).length > 0 && <span className="text-[9px] text-slate-400 font-bold">✓{(t.subtasks || []).filter(s => s.done).length}/{(t.subtasks || []).length}</span>}
                 <span className={`text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${TAG[t.tagColor] || TAG.slate}`}>{t.project}</span>

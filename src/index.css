@@ -20,6 +20,20 @@
   --color-tag-indigo-800: oklch(39.8% 0.195 277.366);
   --color-tag-indigo-900: oklch(35.9% 0.144 278.697);
   --color-tag-indigo-950: oklch(25.7% 0.09 281.288);
+
+  /* "In progress" status colour — terracotta, identical in every theme and
+     distinct from all project colours. Use progress-* for that status only. */
+  --color-progress-50: #fbf1ec;
+  --color-progress-100: #f6e1d7;
+  --color-progress-200: #eec3b0;
+  --color-progress-300: #e5a286;
+  --color-progress-400: #dd8a69;
+  --color-progress-500: #d97757;
+  --color-progress-600: #c6613f;
+  --color-progress-700: #a84f31;
+  --color-progress-800: #873f28;
+  --color-progress-900: #6b3422;
+  --color-progress-950: #3d1c12;
 }
 
 /* Dark mode support */

@@ -231,7 +231,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
       >
         <button onClick={e => { e.stopPropagation(); moveTask(task.id, task.status === 'done' ? 'todo' : task.status === 'in_progress' ? 'done' : 'in_progress'); }} className="shrink-0">
           {task.status === 'done' ? <CheckCircle2 className="w-5 h-5 text-emerald-500"/>
-            : isIP ? <InProgressIcon className="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+            : isIP ? <InProgressIcon className="w-5 h-5 text-progress-600 dark:text-progress-400"/>
             : <Circle className="w-5 h-5 text-slate-300 hover:text-indigo-400 transition-colors"/>}
         </button>
         <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor] || 'bg-slate-400'}`}/>
@@ -239,7 +239,7 @@ function TodayTaskRow({ task, isSelected, isExpanded, onSelect, onEdit, onContex
           <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'}`}/>
         )}
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-200' : 'text-slate-800 dark:text-white'}`}>{task.title}</p>
+          <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-progress-900 dark:text-progress-200' : 'text-slate-800 dark:text-white'}`}>{task.title}</p>
           {hasSubtasks && (
             <p className="text-[10px] text-slate-400 mt-0.5">✓ {task.subtasks!.filter(s => s.done).length}/{task.subtasks!.length} підзадач</p>
           )}
@@ -497,13 +497,13 @@ export function Today() {
         <DragDropContext onDragEnd={onDragEnd}>
           {inprog.length > 0 && (
             <div>
-              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+              <p className="text-[10px] font-black text-progress-600 dark:text-progress-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                 <InProgressIcon className="w-3 h-3"/> В процесі ({inprog.length})
               </p>
               <Droppable droppableId="inprog">
                 {(provided, snapshot) => (
                   <div ref={provided.innerRef} {...provided.droppableProps}
-                    className={`rounded-xl px-3 border ${snapshot.isDraggingOver ? 'bg-amber-100/80 border-amber-300' : 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-800'}`}>
+                    className={`rounded-xl px-3 border ${snapshot.isDraggingOver ? 'bg-progress-100/80 border-progress-300' : 'bg-progress-50 dark:bg-progress-900/10 border-progress-100 dark:border-progress-800'}`}>
                     {orderedInprog.map((t, i) => (
                       <Draggable key={t.id} draggableId={t.id} index={i}>
                         {(prov, snap) => (

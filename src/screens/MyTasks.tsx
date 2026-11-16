@@ -52,7 +52,7 @@ const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClic
   return (
     <div
       className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer group select-none
-        ${isIP ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-700'
+        ${isIP ? 'bg-progress-50 dark:bg-progress-900/20 border-progress-200 dark:border-progress-700'
           : isSelected ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-400 dark:border-indigo-500'
           : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-indigo-200'}
         ${isSelected ? 'ring-2 ring-indigo-400 ring-inset' : ''}`}
@@ -68,7 +68,7 @@ const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClic
         className="shrink-0"
       >
         {task.status === 'done' ? <CheckCircle2 className="w-5 h-5 text-emerald-500"/>
-          : isIP ? <InProgressIcon className="w-5 h-5 text-amber-600 dark:text-amber-400"/>
+          : isIP ? <InProgressIcon className="w-5 h-5 text-progress-600 dark:text-progress-400"/>
           : <Circle className="w-5 h-5 text-slate-300 hover:text-indigo-400 transition-colors"/>}
       </button>
       <div className={`w-2 h-2 rounded-full shrink-0 ${DOT[task.tagColor] || 'bg-slate-400'}`}/>
@@ -76,7 +76,7 @@ const TaskRow = memo(function TaskRow({ task, isSelected, onSelect, onDoubleClic
         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-red-500' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-400'}`}/>
       )}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-amber-900 dark:text-amber-100' : 'text-slate-800 dark:text-white'}`}>
+        <p className={`text-sm font-semibold line-clamp-2 ${task.status === 'done' ? 'line-through text-slate-400' : isIP ? 'text-progress-900 dark:text-progress-100' : 'text-slate-800 dark:text-white'}`}>
           {task.title}
         </p>
         {subtasks.length > 0 && (

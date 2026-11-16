@@ -156,7 +156,7 @@ export function TaskModal() {
 
   const statuses: {v:TaskStatus;l:string;c:string}[] = [
     {v:'todo',l:'Заплановано',c:'bg-slate-100 text-slate-700'},
-    {v:'in_progress',l:'В процесі',c:'bg-amber-100 text-amber-700'},
+    {v:'in_progress',l:'В процесі',c:'bg-progress-100 text-progress-700'},
     {v:'done',l:'Готово',c:'bg-emerald-100 text-emerald-700'},
   ];
 
