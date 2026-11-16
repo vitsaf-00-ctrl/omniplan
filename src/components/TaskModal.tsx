@@ -136,19 +136,17 @@ export function TaskModal() {
     today.setHours(0, 0, 0, 0);
     const { tasks, updateTask, deleteTask } = useTaskStore.getState();
 
-    const recurringParentId = (editingTask as any).recurringParentId as string | undefined;
-    const parentId = recurringParentId || editingTask.id;
+    const parentId = editingTask.recurringParentId || editingTask.id;
+    const series = tasks.filter(t => (t.recurringParentId || t.id) === parentId);
 
-    const futureCopies = tasks.filter(t => {
-      const tParent = (t as any).recurringParentId as string | undefined;
+    // Future, not-yet-done copies go away; everything else in the series stops
+    // repeating, so completing any remaining copy can't restart the chain.
+    series.forEach(t => {
       const d = new Date(t.date);
       d.setHours(0, 0, 0, 0);
-      return tParent === parentId && d > today;
+      if (t.id !== editingTask.id && d > today && t.status !== 'done') deleteTask(t.id);
+      else if (t.recurring || t.recurringNextId) updateTask(t.id, { recurring: false, recurringNextId: undefined });
     });
-
-    futureCopies.forEach(t => deleteTask(t.id));
-
-    updateTask(parentId, { recurring: false } as any);
     close();
   };
 

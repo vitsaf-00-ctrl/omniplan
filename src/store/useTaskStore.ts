@@ -4,6 +4,7 @@ import type { TemporalState } from 'zundo';
 import { fsSetTask, fsDeleteTask, fsBatchSync } from '../lib/taskFirestore';
 import { useToastStore } from './useToastStore';
 import { useSyncStore } from './useSyncStore';
+import { nextInstanceDate, normalizeRecurringType, isSameDay } from '../utils/recurrence';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TagColor = 'blue' | 'indigo' | 'purple' | 'emerald' | 'amber' | 'rose' | 'slate';
@@ -28,6 +29,8 @@ export interface Task {
   recurring?: boolean;
   recurringType?: string;
   recurringParentId?: string;
+  /** Id of the instance created when this one was completed (for undo). */
+  recurringNextId?: string;
   order?: number;
   notifyAtTime?: boolean;
   googleCalendarSync?: boolean;
@@ -104,6 +107,62 @@ function syncDelete(userId: string, taskId: string): void {
   attempt();
 }
 
+type SetTasks = (fn: (s: TaskStore) => Partial<TaskStore>) => void;
+
+/**
+ * Recurring "next copy on completion": called after a task's status changed.
+ * - not done → done on a recurring task: create exactly one next instance.
+ * - done → not done: remove the instance created on completion, if untouched.
+ */
+function handleRecurringTransition(get: () => TaskStore, set: SetTasks, prev: Task, newStatus: TaskStatus): void {
+  if (prev.status === newStatus) return;
+
+  if (newStatus === 'done' && prev.recurring && !prev.someday) {
+    const parentId = prev.recurringParentId || prev.id;
+    const nextDate = nextInstanceDate(new Date(prev.date), normalizeRecurringType(prev.recurringType));
+    const existing = get().tasks.find(t =>
+      t.id !== prev.id && !t.someday && isSameDay(new Date(t.date), nextDate) &&
+      ((t.recurringParentId || t.id) === parentId || (t.title === prev.title && t.project === prev.project)),
+    );
+    if (existing) return; // already scheduled (e.g. older pre-generated copy)
+
+    const id = uid('rec_');
+    const next: Task = {
+      ...prev,
+      id,
+      date: nextDate,
+      status: 'todo',
+      someday: false,
+      createdAt: new Date(),
+      recurringParentId: parentId,
+      recurringNextId: undefined,
+      order: undefined,
+      subtasks: prev.subtasks?.length
+        ? prev.subtasks.map(st => ({ id: uid('sub_'), title: st.title, done: false }))
+        : undefined,
+    };
+    set(s => ({
+      tasks: [...s.tasks.map(t => t.id === prev.id ? { ...t, recurringNextId: id } : t), next],
+    }));
+    syncTask(get, id);
+    syncTask(get, prev.id);
+    return;
+  }
+
+  if (prev.status === 'done' && prev.recurringNextId) {
+    const next = get().tasks.find(t => t.id === prev.recurringNextId);
+    const untouched = next && next.status === 'todo' && !next.subtasks?.some(st => st.done);
+    set(s => ({
+      tasks: s.tasks
+        .filter(t => !(untouched && t.id === prev.recurringNextId))
+        .map(t => t.id === prev.id ? { ...t, recurringNextId: undefined } : t),
+    }));
+    const { userId } = get();
+    if (untouched && userId && next) syncDelete(userId, next.id);
+    syncTask(get, prev.id);
+  }
+}
+
 interface TaskStore {
   tasks: Task[];
   projects: Project[];
@@ -172,8 +231,13 @@ export const useTaskStore = create<TaskStore>()(
   },
 
   updateTask: (id, updates) => {
+    const prev = get().tasks.find(t => t.id===id);
     set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,...updates} : t) }));
     syncTask(get, id);
+    if (prev && updates.status) {
+      // Recurrence settings may have changed in the same update (TaskModal save).
+      handleRecurringTransition(get, set, { ...prev, ...updates, status: prev.status }, updates.status);
+    }
   },
 
   deleteTask: (id) => {
@@ -183,8 +247,10 @@ export const useTaskStore = create<TaskStore>()(
   },
 
   moveTask: (id, newStatus) => {
+    const prev = get().tasks.find(t => t.id===id);
     set(s => ({ tasks: s.tasks.map(t => t.id===id ? {...t,status:newStatus} : t) }));
     syncTask(get, id);
+    if (prev) handleRecurringTransition(get, set, prev, newStatus);
   },
 
   moveTaskToDate: (id, newDate) => {
@@ -195,7 +261,7 @@ export const useTaskStore = create<TaskStore>()(
   copyTaskToDate: (id, newDate) => {
     const task = get().tasks.find(t => t.id===id);
     if (!task) return;
-    const newTask: Task = { ...task, id:uid('task_'), date:newDate, status:'todo', someday:false, createdAt:new Date() };
+    const newTask: Task = { ...task, id:uid('task_'), date:newDate, status:'todo', someday:false, createdAt:new Date(), recurringNextId: undefined };
     set(s => ({ tasks: [...s.tasks, newTask] }));
     syncTask(get, newTask.id);
   },
@@ -275,7 +341,7 @@ export const useTaskStore = create<TaskStore>()(
     const task = get().tasks.find(t => t.id===id);
     if (!task) return '';
     const newId = uid('task_');
-    const newTask: Task = { ...task, id: newId, status: 'todo', createdAt: new Date() };
+    const newTask: Task = { ...task, id: newId, status: 'todo', createdAt: new Date(), recurringNextId: undefined };
     set(s => ({ tasks: [...s.tasks, newTask] }));
     syncTask(get, newId);
     return newId;
