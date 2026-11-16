@@ -21,33 +21,32 @@
   --color-tag-indigo-900: oklch(35.9% 0.144 278.697);
   --color-tag-indigo-950: oklch(25.7% 0.09 281.288);
 
-  /* "In progress" status colour — terracotta, identical in every theme and
-     distinct from all project colours. Use progress-* for that status only. */
-  --color-progress-50: #fbf1ec;
-  --color-progress-100: #f6e1d7;
-  --color-progress-200: #eec3b0;
-  --color-progress-300: #e5a286;
-  --color-progress-400: #dd8a69;
-  --color-progress-500: #d97757;
-  --color-progress-600: #c6613f;
-  --color-progress-700: #a84f31;
-  --color-progress-800: #873f28;
-  --color-progress-900: #6b3422;
-  --color-progress-950: #3d1c12;
+  /* Status colours. Use progress-* / planned-* only for "в роботі" /
+     "заплановано". Defaults fit the indigo themes (Світла/Темна): planned =
+     indigo, in progress = orange. The Claude themes override them below. */
+  --color-progress-50: oklch(98% 0.016 73.684);
+  --color-progress-100: oklch(95.4% 0.038 75.164);
+  --color-progress-200: oklch(90.1% 0.076 70.697);
+  --color-progress-300: oklch(83.7% 0.128 66.29);
+  --color-progress-400: oklch(75% 0.183 55.934);
+  --color-progress-500: oklch(70.5% 0.213 47.604);
+  --color-progress-600: oklch(64.6% 0.222 41.116);
+  --color-progress-700: oklch(55.3% 0.195 38.402);
+  --color-progress-800: oklch(47% 0.157 37.304);
+  --color-progress-900: oklch(40.8% 0.123 38.172);
+  --color-progress-950: oklch(26.6% 0.079 36.259);
 
-  /* "Planned" status colour (steel blue) for the colour-by-status mode —
-     constant in every theme, deliberately unlike the bright blue of ДІС. */
-  --color-planned-50: #eef3f9;
-  --color-planned-100: #dbe6f2;
-  --color-planned-200: #b8cde4;
-  --color-planned-300: #8fb0d3;
-  --color-planned-400: #6690c0;
-  --color-planned-500: #4775ab;
-  --color-planned-600: #375e8f;
-  --color-planned-700: #2d4c74;
-  --color-planned-800: #263f5f;
-  --color-planned-900: #20344d;
-  --color-planned-950: #152233;
+  --color-planned-50: oklch(96.2% 0.018 272.314);
+  --color-planned-100: oklch(93% 0.034 272.788);
+  --color-planned-200: oklch(87% 0.065 274.039);
+  --color-planned-300: oklch(78.5% 0.115 274.713);
+  --color-planned-400: oklch(67.3% 0.182 276.935);
+  --color-planned-500: oklch(58.5% 0.233 277.117);
+  --color-planned-600: oklch(51.1% 0.262 276.966);
+  --color-planned-700: oklch(45.7% 0.24 277.023);
+  --color-planned-800: oklch(39.8% 0.195 277.366);
+  --color-planned-900: oklch(35.9% 0.144 278.697);
+  --color-planned-950: oklch(25.7% 0.09 281.288);
 }
 
 /* Dark mode support */
@@ -90,6 +89,30 @@
   --color-slate-900: #262624;
   --color-slate-950: #1f1e1d;
 
+  /* Status colours: in progress = clay, planned = steel blue */
+  --color-progress-50: #fbf1ec;
+  --color-progress-100: #f6e1d7;
+  --color-progress-200: #eec3b0;
+  --color-progress-300: #e5a286;
+  --color-progress-400: #dd8a69;
+  --color-progress-500: #d97757;
+  --color-progress-600: #c6613f;
+  --color-progress-700: #a84f31;
+  --color-progress-800: #873f28;
+  --color-progress-900: #6b3422;
+  --color-progress-950: #3d1c12;
+  --color-planned-50: #eef3f9;
+  --color-planned-100: #dbe6f2;
+  --color-planned-200: #b8cde4;
+  --color-planned-300: #8fb0d3;
+  --color-planned-400: #6690c0;
+  --color-planned-500: #4775ab;
+  --color-planned-600: #375e8f;
+  --color-planned-700: #2d4c74;
+  --color-planned-800: #263f5f;
+  --color-planned-900: #20344d;
+  --color-planned-950: #152233;
+
   /* Calmer type: no 900-weight shouting */
   --font-weight-black: 700;
 
@@ -99,6 +122,16 @@
 :root[data-palette="claude"].dark {
   background-color: var(--color-slate-900);
   color-scheme: dark;
+  /* Brighter status fills so they don't sink into the charcoal canvas */
+  --color-progress-600: #d97757;
+  --color-progress-500: #e08a6c;
+  --color-planned-500: #5b83b5;
+  --color-planned-600: #4a72a4;
+}
+
+/* Default dark theme: slightly brighter in-progress fill on navy */
+:root.dark:not([data-palette]) {
+  --color-progress-600: oklch(70.5% 0.213 47.604);
 }
 
 /* Serif headings, as in Claude */

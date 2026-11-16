@@ -83,6 +83,11 @@ from either is silently lost.
 **Mobile:** sidebar hidden on small screens; `MobileTabBar` is the bottom nav; long-press (500 ms) opens the
 context menu.
 
+**Colours:** UI accent = `indigo-*` (remapped to clay by the Claude theme). Project tag colour "indigo" uses
+`tag-indigo-*`, which no theme remaps — never use `indigo-*` for project colours. Task status colours use
+`progress-*` (в роботі) and `planned-*` (заплановано); each theme sets them in `src/index.css`.
+`taskColorMode` in `useAppStore` switches calendar pills between project colours and status colours.
+
 **Personal data:** never commit task exports (`*.csv` is git-ignored).
 
 ## UI Language
