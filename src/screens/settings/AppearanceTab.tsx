@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { THEME_OPTIONS } from '../../lib/themes';
+import { TaskColorModeToggle } from '../../components/ThemeSwitcher';
 
 
 
@@ -53,6 +54,14 @@ export function AppearanceTab() {
             );
           })}
         </div>
+      </div>
+
+      <div>
+        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Колір задач у календарі</label>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-3">
+          «Статус»: заплановані — сталеві сині, в роботі — теракотові зі смугами, виконані — сірі; проєкт показано міткою праворуч.
+        </p>
+        <TaskColorModeToggle/>
       </div>
 
       <div>

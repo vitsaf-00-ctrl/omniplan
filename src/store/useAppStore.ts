@@ -31,6 +31,14 @@ export function applyTheme(t: Theme): void {
 }
 
 const initialTheme = loadTheme();
+
+/** How task pills are coloured: by project tag, or by status (with a project tag chip). */
+export type TaskColorMode = 'project' | 'status';
+const COLOR_MODE_KEY = 'omniplan-task-color';
+function loadColorMode(): TaskColorMode {
+  try { return localStorage.getItem(COLOR_MODE_KEY) === 'status' ? 'status' : 'project'; }
+  catch { return 'project'; }
+}
 applyTheme(initialTheme);
 
 interface ConfirmDialog {
@@ -44,6 +52,7 @@ interface AppState {
   isMobileMenuOpen: boolean;
   activeView: ActiveView;
   theme: Theme;
+  taskColorMode: TaskColorMode;
   isTaskModalOpen: boolean;
   editingTask: Task | null;
   selectedDate?: Date;
@@ -60,6 +69,7 @@ interface AppState {
   setActiveView: (v: ActiveView) => void;
   setTheme: (v: Theme) => void;
   toggleTheme: () => void;
+  setTaskColorMode: (m: TaskColorMode) => void;
   setTaskModalOpen: (v: boolean) => void;
   setEditingTask: (t: Task | null) => void;
   setSelectedDate: (d?: Date) => void;
@@ -73,7 +83,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   user: null, isAuthLoaded: false, isMobileMenuOpen: false,
-  activeView: 'today', theme: initialTheme,
+  activeView: 'today', theme: initialTheme, taskColorMode: loadColorMode(),
   isTaskModalOpen: false, editingTask: null, selectedDate: undefined,
   clipboardTaskId: null, clipboardMode: null, focusTaskId: null, selectedTaskId: null,
   confirmDialog: null, searchOpen: false,
@@ -91,6 +101,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleTheme: () => {
     const t = get().theme;
     get().setTheme(t === 'light' ? 'dark' : t === 'dark' ? 'light' : t === 'claude' ? 'claude-dark' : 'claude');
+  },
+  setTaskColorMode: m => {
+    set({ taskColorMode: m });
+    try { localStorage.setItem(COLOR_MODE_KEY, m); } catch { /* storage unavailable */ }
   },
   setTaskModalOpen: v => set({ isTaskModalOpen: v }),
   setEditingTask: t => set({ editingTask: t }),

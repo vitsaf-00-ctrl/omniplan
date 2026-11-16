@@ -34,6 +34,20 @@
   --color-progress-800: #873f28;
   --color-progress-900: #6b3422;
   --color-progress-950: #3d1c12;
+
+  /* "Planned" status colour (steel blue) for the colour-by-status mode —
+     constant in every theme, deliberately unlike the bright blue of ДІС. */
+  --color-planned-50: #eef3f9;
+  --color-planned-100: #dbe6f2;
+  --color-planned-200: #b8cde4;
+  --color-planned-300: #8fb0d3;
+  --color-planned-400: #6690c0;
+  --color-planned-500: #4775ab;
+  --color-planned-600: #375e8f;
+  --color-planned-700: #2d4c74;
+  --color-planned-800: #263f5f;
+  --color-planned-900: #20344d;
+  --color-planned-950: #152233;
 }
 
 /* Dark mode support */

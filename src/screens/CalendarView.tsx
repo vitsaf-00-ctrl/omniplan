@@ -33,7 +33,11 @@ const PILL_COLORS: Record<string,string> = {
   purple:'bg-purple-500 text-white', emerald:'bg-emerald-500 text-white',
   amber:'bg-amber-400 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-400 text-white',
 };
-const PILL_DONE = 'bg-slate-200 text-slate-400 line-through';
+const PILL_DONE = 'bg-slate-200 text-slate-400';
+// Colour-by-status mode ("Колір задач: за статусом")
+const PLANNED_PILL = 'bg-planned-500 text-white';
+const PLANNED_TL = 'border-planned-500 bg-planned-500/15 text-planned-900 dark:text-planned-100';
+const DONE_TL = 'border-slate-400 bg-slate-400/20 text-slate-700 dark:text-slate-200';
 // In progress: terracotta + moving stripes + ◐ icon — one constant colour in
 // every theme, distinct from all project colours (incl. amber Орлі).
 const IP_PILL = 'bg-progress-600 text-white ip-stripes';
@@ -55,18 +59,32 @@ const COLOR_DOT: Record<string,string> = {
 };
 
 type Ctx = { x: number; y: number; task: Task };
+const isDoneTL = (t: Task) => t.status === 'done';
+
+/** Project tag shown at the end of a pill in colour-by-status mode. */
+function ProjectChip({ task, faded }: { task: Task; faded?: boolean }) {
+  return (
+    <span title={task.project}
+      className={`shrink-0 max-w-[45%] min-w-0 inline-flex items-center gap-1 px-1 rounded text-[9px] font-semibold leading-[14px] ${faded ? 'bg-white/60 text-slate-500' : 'bg-white/90 text-slate-700'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${COLOR_DOT[task.tagColor] || COLOR_DOT.slate}`}/>
+      <span className="truncate">{task.project}</span>
+    </span>
+  );
+}
 
 
 function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
   task: Task; dayTs: number; isSelected: boolean; onSelect: (x: number, y: number, yBottom: number) => void;
 }) {
   const { setTaskModalOpen, setEditingTask } = useAppStore();
+  const byStatus = useAppStore(s => s.taskColorMode) === 'status';
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status === 'done', isIP = task.status === 'in_progress';
-  const base = PILL_COLORS[task.tagColor] || PILL_COLORS.slate;
+  const base = byStatus ? PLANNED_PILL : (PILL_COLORS[task.tagColor] || PILL_COLORS.slate);
   const pill = isDone ? PILL_DONE : isIP ? IP_PILL : base;
   const dotCls = isDone ? 'bg-slate-300 opacity-60'
     : isIP ? 'bg-progress-600 ring-2 ring-offset-1 ring-progress-300 animate-pulse'
+    : byStatus ? 'bg-planned-500'
     : (COLOR_DOT[task.tagColor] || COLOR_DOT.slate);
 
   const handleDrag = (e: React.DragEvent) => { e.stopPropagation(); e.dataTransfer.setData('taskId', task.id); e.dataTransfer.setData('srcDay', String(dayTs)); };
@@ -90,7 +108,8 @@ function MonthTaskDot({ task, dayTs, isSelected, onSelect }: {
       >
         {isIP && <InProgressIcon className="w-3 h-3"/>}
         {task.recurring && <Repeat className="w-2.5 h-2.5 shrink-0 opacity-70"/>}
-        <span className="truncate min-w-0 flex-1">{task.title}</span>
+        <span className={`truncate min-w-0 flex-1 ${isDone ? 'line-through' : ''}`}>{task.title}</span>
+        {byStatus && !isSelected && <ProjectChip task={task} faded={isDone}/>}
       </div>
       {ctx && <TaskContextMenu x={ctx.x} y={ctx.y} task={ctx.task} onClose={() => setCtx(null)}/>}
     </>
@@ -220,6 +239,7 @@ function DayView({ day, onPrev, onNext }: { day:Date; onPrev:()=>void; onNext:()
 export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>void; onNext: ()=>void }) {
   const { getTasksForDay } = useTaskStore();
   const { setTaskModalOpen, setEditingTask, setSelectedDate } = useAppStore();
+  const byStatus = useAppStore(s => s.taskColorMode) === 'status';
 
   const selectDay = (d: Date) => { setSelectedDate(d); setEditingTask(null); setTaskModalOpen(true); };
 
@@ -329,7 +349,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
             {timeless.map(t => (
               <div key={t.id}
                 onClick={() => { setEditingTask(t); setTaskModalOpen(true); }}
-                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] inline-flex items-center gap-1 ${t.status === 'in_progress' ? IP_TL : (TL_COLORS[t.tagColor] || TL_COLORS.slate)}`}>
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer border-l-[3px] inline-flex items-center gap-1 ${t.status === 'in_progress' ? IP_TL : byStatus ? (isDoneTL(t) ? DONE_TL : PLANNED_TL) : (TL_COLORS[t.tagColor] || TL_COLORS.slate)}`}>
                 {t.status === 'in_progress' && <InProgressIcon className="w-3 h-3"/>}{t.title}
               </div>
             ))}
@@ -363,7 +383,7 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
                 style={{top:`${(h - TL_START) * HOUR_PX + HOUR_PX / 2}px`}}/>
             ))}
             {timedLayout.map(({ t, top, col, totalCols }) => {
-              const colCls = TL_COLORS[t.tagColor] || TL_COLORS.slate;
+              const colCls = byStatus ? (isDoneTL(t) ? DONE_TL : PLANNED_TL) : (TL_COLORS[t.tagColor] || TL_COLORS.slate);
               const isDone = t.status === 'done';
               const isIP = t.status === 'in_progress';
               const leftPx  = `calc(${(col / totalCols) * 100}% + 4px)`;
@@ -376,7 +396,11 @@ export function TimelineView({ day, onPrev, onNext }: { day: Date; onPrev: ()=>v
                   <p className={`text-xs font-bold leading-tight flex items-center gap-1 ${isDone ? 'line-through' : ''}`}>
                     {isIP && <InProgressIcon className="w-3 h-3"/>}{t.title}
                   </p>
-                  <p className="text-[10px] opacity-60 font-medium mt-0.5">{t.time} · {t.project}</p>
+                  <p className="text-[10px] font-medium mt-0.5 flex items-center gap-1 min-w-0">
+                    <span className="opacity-60">{t.time} ·</span>
+                    {byStatus && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${COLOR_DOT[t.tagColor] || COLOR_DOT.slate}`}/>}
+                    <span className="opacity-60 truncate">{t.project}</span>
+                  </p>
                   {t.subtasks && t.subtasks.length > 0 && (
                     <div className="flex items-center gap-1 mt-1">
                       <div className="flex-1 h-1 bg-black/10 rounded-full overflow-hidden">

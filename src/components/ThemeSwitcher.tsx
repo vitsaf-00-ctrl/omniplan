@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Palette, Check } from 'lucide-react';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore, type TaskColorMode } from '../store/useAppStore';
 import { THEME_OPTIONS, type ThemePreview } from '../lib/themes';
 
 /** Small swatch: canvas / sidebar halves with an accent dot. */
@@ -11,6 +11,32 @@ function Swatch({ p }: { p: ThemePreview }) {
       <span className="w-1/2 h-full" style={{ background: p.canvas }} />
       <span className="absolute w-2 h-2 rounded-full right-0.5 bottom-0.5" style={{ background: p.accent }} />
     </span>
+  );
+}
+
+export const COLOR_MODE_OPTIONS: { id: TaskColorMode; label: string; hint: string }[] = [
+  { id: 'project', label: 'Проєкт', hint: 'Колір плашки = колір проєкту' },
+  { id: 'status', label: 'Статус', hint: 'Заплановано / в роботі / готово, проєкт — міткою' },
+];
+
+/** Segmented control: colour task pills by project or by status. */
+export function TaskColorModeToggle({ compact }: { compact?: boolean }) {
+  const { taskColorMode, setTaskColorMode } = useAppStore();
+  return (
+    <div className={`grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-slate-100 dark:bg-slate-700 ${compact ? '' : 'max-w-xs'}`}>
+      {COLOR_MODE_OPTIONS.map(o => {
+        const active = taskColorMode === o.id;
+        return (
+          <button key={o.id} onClick={() => setTaskColorMode(o.id)} title={o.hint} aria-pressed={active}
+            className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[11px] font-bold transition-all ${active ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'}`}>
+            {o.id === 'project'
+              ? <span className="flex -space-x-0.5"><span className="w-2 h-2 rounded-full bg-blue-500"/><span className="w-2 h-2 rounded-full bg-tag-indigo-500"/><span className="w-2 h-2 rounded-full bg-emerald-500"/></span>
+              : <span className="flex -space-x-0.5"><span className="w-2 h-2 rounded-full bg-planned-500"/><span className="w-2 h-2 rounded-full bg-progress-600"/><span className="w-2 h-2 rounded-full bg-slate-300"/></span>}
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -51,6 +77,10 @@ export function ThemeSwitcher() {
               </button>
             );
           })}
+          <div className="border-t border-slate-100 dark:border-slate-700 mt-1 pt-1.5 px-1.5 pb-1.5">
+            <p className="px-1 pb-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Колір задач</p>
+            <TaskColorModeToggle compact/>
+          </div>
         </div>
       )}
     </div>
