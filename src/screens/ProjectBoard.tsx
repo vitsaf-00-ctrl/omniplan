@@ -9,12 +9,12 @@ import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
 const TAG: Record<string,string> = {
-  blue:'bg-blue-50 text-blue-700', indigo:'bg-indigo-50 text-indigo-700',
+  blue:'bg-blue-50 text-blue-700', indigo:'bg-tag-indigo-50 text-tag-indigo-700',
   purple:'bg-purple-50 text-purple-700', emerald:'bg-emerald-50 text-emerald-700',
   amber:'bg-amber-50 text-amber-700', rose:'bg-rose-50 text-rose-700', slate:'bg-slate-100 text-slate-600',
 };
 const DOT: Record<string,string> = {
-  blue:'bg-blue-400',indigo:'bg-indigo-400',purple:'bg-purple-400',
+  blue:'bg-blue-400',indigo:'bg-tag-indigo-400',purple:'bg-purple-400',
   emerald:'bg-emerald-400',amber:'bg-amber-400',rose:'bg-rose-400',slate:'bg-slate-400',
 };
 

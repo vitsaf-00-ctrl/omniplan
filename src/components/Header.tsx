@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Menu, Plus, Bell, Target, Search } from 'lucide-react';
 import { useAppStore } from '@/src/store/useAppStore';
 import { useTaskStore } from '@/src/store/useTaskStore';
+import { ThemeSwitcher } from './ThemeSwitcher';
 
 const TITLES: Record<string, string> = {
   today: 'Мій день', calendar: 'Календар', board: 'Дошка',
@@ -48,6 +49,9 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        {/* Theme switcher */}
+        <ThemeSwitcher/>
+
         {/* Search button */}
         <button onClick={() => setSearchOpen(true)}
           className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 rounded-lg transition-all">

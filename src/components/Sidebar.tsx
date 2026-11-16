@@ -9,7 +9,7 @@ import type { TagColor } from '../store/useTaskStore';
 import { doc, updateDoc, collection } from 'firebase/firestore';
 
 const DOT: Record<string,string> = {
-  blue:'bg-blue-400', indigo:'bg-indigo-400', purple:'bg-purple-400',
+  blue:'bg-blue-400', indigo:'bg-tag-indigo-400', purple:'bg-purple-400',
   emerald:'bg-emerald-400', amber:'bg-amber-400', rose:'bg-rose-400', slate:'bg-slate-400',
 };
 

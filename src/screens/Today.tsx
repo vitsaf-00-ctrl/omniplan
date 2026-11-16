@@ -175,17 +175,17 @@ function DayPlanSuggestions({ todayIds, todayActiveCount }: {
 }
 
 const TAG: Record<string,string> = {
-  blue:'bg-blue-100 text-blue-700', indigo:'bg-indigo-100 text-indigo-700',
+  blue:'bg-blue-100 text-blue-700', indigo:'bg-tag-indigo-100 text-tag-indigo-700',
   purple:'bg-purple-100 text-purple-700', emerald:'bg-emerald-100 text-emerald-700',
   amber:'bg-amber-100 text-amber-700', rose:'bg-rose-100 text-rose-700', slate:'bg-slate-100 text-slate-600',
 };
 const TAG_ACTIVE: Record<string,string> = {
-  blue:'bg-blue-500 text-white', indigo:'bg-indigo-500 text-white',
+  blue:'bg-blue-500 text-white', indigo:'bg-tag-indigo-500 text-white',
   purple:'bg-purple-500 text-white', emerald:'bg-emerald-500 text-white',
   amber:'bg-amber-500 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-500 text-white',
 };
 const DOT: Record<string,string> = {
-  blue:'bg-blue-400', indigo:'bg-indigo-400', purple:'bg-purple-400',
+  blue:'bg-blue-400', indigo:'bg-tag-indigo-400', purple:'bg-purple-400',
   emerald:'bg-emerald-400', amber:'bg-amber-400', rose:'bg-rose-400', slate:'bg-slate-400',
 };
 

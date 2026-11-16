@@ -11,13 +11,13 @@ import { format } from 'date-fns';
 import { uk } from 'date-fns/locale';
 
 const TAG: Record<string,string> = {
-  blue:'bg-blue-50 text-blue-700 border-blue-200', indigo:'bg-indigo-50 text-indigo-700 border-indigo-200',
+  blue:'bg-blue-50 text-blue-700 border-blue-200', indigo:'bg-tag-indigo-50 text-tag-indigo-700 border-tag-indigo-200',
   purple:'bg-purple-50 text-purple-700 border-purple-200', emerald:'bg-emerald-50 text-emerald-700 border-emerald-200',
   amber:'bg-amber-50 text-amber-700 border-amber-200', rose:'bg-rose-50 text-rose-700 border-rose-200',
   slate:'bg-slate-100 text-slate-600 border-slate-200',
 };
 const DOT: Record<string,string> = {
-  blue:'bg-blue-400', indigo:'bg-indigo-400', purple:'bg-purple-400',
+  blue:'bg-blue-400', indigo:'bg-tag-indigo-400', purple:'bg-purple-400',
   emerald:'bg-emerald-400', amber:'bg-amber-400', rose:'bg-rose-400', slate:'bg-slate-400',
 };
 

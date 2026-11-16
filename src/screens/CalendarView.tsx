@@ -20,7 +20,7 @@ const TL_HOURS = TL_END - TL_START + 1; // 15 rows
 
 const TL_COLORS: Record<string,string> = {
   blue:'border-blue-500 bg-blue-500/20 text-blue-900 dark:text-blue-100',
-  indigo:'border-indigo-500 bg-indigo-500/20 text-indigo-900 dark:text-indigo-100',
+  indigo:'border-tag-indigo-500 bg-tag-indigo-500/20 text-tag-indigo-900 dark:text-tag-indigo-100',
   purple:'border-purple-500 bg-purple-500/20 text-purple-900 dark:text-purple-100',
   emerald:'border-emerald-500 bg-emerald-500/20 text-emerald-900 dark:text-emerald-100',
   amber:'border-amber-400 bg-amber-400/20 text-amber-900 dark:text-amber-100',
@@ -29,7 +29,7 @@ const TL_COLORS: Record<string,string> = {
 };
 
 const PILL_COLORS: Record<string,string> = {
-  blue:'bg-blue-500 text-white', indigo:'bg-indigo-500 text-white',
+  blue:'bg-blue-500 text-white', indigo:'bg-tag-indigo-500 text-white',
   purple:'bg-purple-500 text-white', emerald:'bg-emerald-500 text-white',
   amber:'bg-amber-400 text-white', rose:'bg-rose-500 text-white', slate:'bg-slate-400 text-white',
 };
@@ -40,7 +40,7 @@ const IP_STRIPES = 'ip-stripes';
 
 const TAG_BG: Record<string,string> = {
   blue:'border-l-blue-500 bg-blue-50 text-blue-900',
-  indigo:'border-l-indigo-500 bg-indigo-50 text-indigo-900',
+  indigo:'border-l-tag-indigo-500 bg-tag-indigo-50 text-tag-indigo-900',
   purple:'border-l-purple-500 bg-purple-50 text-purple-900',
   emerald:'border-l-emerald-500 bg-emerald-50 text-emerald-900',
   amber:'border-l-amber-500 bg-amber-100 text-amber-900',
@@ -49,7 +49,7 @@ const TAG_BG: Record<string,string> = {
 };
 
 const COLOR_DOT: Record<string,string> = {
-  blue:'bg-blue-500', indigo:'bg-indigo-500', purple:'bg-purple-500',
+  blue:'bg-blue-500', indigo:'bg-tag-indigo-500', purple:'bg-purple-500',
   emerald:'bg-emerald-500', amber:'bg-amber-400', rose:'bg-rose-500', slate:'bg-slate-400',
 };
 
@@ -102,7 +102,7 @@ function WeekTaskCard({ task }: { task:Task }) {
   const { moveTask, moveTaskToDate } = useTaskStore();
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const isDone = task.status==='done', isIP = task.status==='in_progress';
-  const DOT: Record<string,string> = {blue:'bg-blue-400',indigo:'bg-indigo-400',purple:'bg-purple-400',emerald:'bg-emerald-400',amber:'bg-amber-400',rose:'bg-rose-400',slate:'bg-slate-400'};
+  const DOT: Record<string,string> = {blue:'bg-blue-400',indigo:'bg-tag-indigo-400',purple:'bg-purple-400',emerald:'bg-emerald-400',amber:'bg-amber-400',rose:'bg-rose-400',slate:'bg-slate-400'};
 
   // Long-press (mobile) and touch-drag state
   const longPressTimer = useRef<ReturnType<typeof setTimeout>|null>(null);
