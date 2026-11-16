@@ -3,7 +3,35 @@ import { User } from 'firebase/auth';
 import { Task } from './useTaskStore';
 
 export type ActiveView = 'today' | 'calendar' | 'board' | 'tasks' | 'settings' | 'stats' | 'focus' | 'timeline';
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'claude' | 'claude-dark';
+
+const THEME_KEY = 'omniplan-theme';
+const THEMES: readonly Theme[] = ['light', 'dark', 'claude', 'claude-dark'];
+const THEME_COLOR: Record<Theme, string> = {
+  light: '#6366f1', dark: '#0f172a', claude: '#faf9f5', 'claude-dark': '#262624',
+};
+
+export const isDarkTheme = (t: Theme) => t === 'dark' || t === 'claude-dark';
+
+function loadTheme(): Theme {
+  try {
+    const v = localStorage.getItem(THEME_KEY) as Theme | null;
+    if (v && THEMES.includes(v)) return v;
+  } catch { /* storage unavailable */ }
+  return 'light';
+}
+
+/** Applies a theme to <html>. index.html runs the same logic before first paint. */
+export function applyTheme(t: Theme): void {
+  const root = document.documentElement;
+  root.classList.toggle('dark', isDarkTheme(t));
+  if (t === 'claude' || t === 'claude-dark') root.dataset.palette = 'claude';
+  else delete root.dataset.palette;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[t]);
+}
+
+const initialTheme = loadTheme();
+applyTheme(initialTheme);
 
 interface ConfirmDialog {
   message: string;
@@ -45,7 +73,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   user: null, isAuthLoaded: false, isMobileMenuOpen: false,
-  activeView: 'today', theme: 'light',
+  activeView: 'today', theme: initialTheme,
   isTaskModalOpen: false, editingTask: null, selectedDate: undefined,
   clipboardTaskId: null, clipboardMode: null, focusTaskId: null, selectedTaskId: null,
   confirmDialog: null, searchOpen: false,
@@ -56,10 +84,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   setActiveView: v => set({ activeView: v }),
   setTheme: v => {
     set({ theme: v });
-    if (v==='dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    applyTheme(v);
+    try { localStorage.setItem(THEME_KEY, v); } catch { /* storage unavailable */ }
   },
-  toggleTheme: () => get().setTheme(get().theme==='light'?'dark':'light'),
+  // Flips light ↔ dark within the current palette.
+  toggleTheme: () => {
+    const t = get().theme;
+    get().setTheme(t === 'light' ? 'dark' : t === 'dark' ? 'light' : t === 'claude' ? 'claude-dark' : 'claude');
+  },
   setTaskModalOpen: v => set({ isTaskModalOpen: v }),
   setEditingTask: t => set({ editingTask: t }),
   setSelectedDate: d => set({ selectedDate: d }),

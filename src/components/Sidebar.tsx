@@ -81,7 +81,7 @@ export function Sidebar() {
   return (
     <>
       {isMobileMenuOpen&&<div className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden" onClick={()=>setMobileMenuOpen(false)}/>}
-      <aside className={`fixed inset-y-0 left-0 z-50 bg-slate-900 flex flex-col shrink-0 h-full transition-all duration-300 lg:static lg:translate-x-0 overflow-y-auto overflow-x-hidden
+      <aside data-sidebar className={`fixed inset-y-0 left-0 z-50 bg-slate-900 flex flex-col shrink-0 h-full transition-all duration-300 lg:static lg:translate-x-0 overflow-y-auto overflow-x-hidden
         w-56 ${collapsed?'lg:w-14':'lg:w-56'}
         ${isMobileMenuOpen?'translate-x-0':'-translate-x-full lg:translate-x-0'}`}>
 

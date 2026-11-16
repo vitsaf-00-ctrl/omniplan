@@ -1,9 +1,21 @@
 import { useState } from 'react';
-import { Sun, Moon, Check } from 'lucide-react';
-import { useAppStore } from '../../store/useAppStore';
+import { Check } from 'lucide-react';
+import { useAppStore, type Theme } from '../../store/useAppStore';
+
+interface ThemePreview {
+  canvas: string; sidebar: string; sidebarText: string; card: string;
+  text: string; accent: string; border: string; serif?: boolean;
+}
+
+const THEME_OPTIONS: { id: Theme; label: string; preview: ThemePreview }[] = [
+  { id: 'light', label: 'Світла', preview: { canvas: '#f8fafc', sidebar: '#0f172a', sidebarText: '#cbd5e1', card: '#ffffff', text: '#1e293b', accent: '#4f46e5', border: '#e2e8f0' } },
+  { id: 'dark', label: 'Темна', preview: { canvas: '#0f172a', sidebar: '#0f172a', sidebarText: '#94a3b8', card: '#1e293b', text: '#e2e8f0', accent: '#6366f1', border: '#334155' } },
+  { id: 'claude', label: 'Claude', preview: { canvas: '#faf9f5', sidebar: '#f0eee6', sidebarText: '#3d3d3a', card: '#ffffff', text: '#30302e', accent: '#c6613f', border: '#e5e2d8', serif: true } },
+  { id: 'claude-dark', label: 'Claude темна', preview: { canvas: '#262624', sidebar: '#1f1e1d', sidebarText: '#9c978a', card: '#30302e', text: '#e5e2d8', accent: '#d97757', border: '#3d3d3a', serif: true } },
+];
 
 export function AppearanceTab() {
-  const { theme, toggleTheme } = useAppStore();
+  const { theme, setTheme } = useAppStore();
   const [accent, setAccent] = useState<'blue' | 'green' | 'orange' | 'purple'>('blue');
   const [fontSize, setFontSize] = useState(1);
   const [density, setDensity] = useState<'compact' | 'standard' | 'relaxed'>('standard');
@@ -20,15 +32,32 @@ export function AppearanceTab() {
       <div>
         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Тема</label>
         <div className="grid grid-cols-2 gap-2">
-          {([{ id: 'light', icon: Sun, label: 'Світла' }, { id: 'dark', icon: Moon, label: 'Темна' }] as const).map(t => {
-            const Icon = t.icon;
+          {THEME_OPTIONS.map(t => {
             const active = theme === t.id;
+            const p = t.preview;
             return (
-              <button key={t.id} onClick={() => { if (theme !== t.id) toggleTheme(); }}
-                className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${active ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
-                <Icon className={`w-6 h-6 ${active ? 'text-indigo-600' : 'text-slate-400'}`}/>
-                <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-500'}`}>{t.label}</span>
-                {active && <div className="w-2 h-2 rounded-full bg-indigo-600"/>}
+              <button key={t.id} onClick={() => setTheme(t.id)} aria-pressed={active}
+                className={`text-left rounded-xl border-2 p-2 transition-all ${active ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'}`}>
+                {/* Mini preview — fixed colours so each card shows its own theme */}
+                <div className="flex h-16 rounded-lg overflow-hidden mb-2" style={{ background: p.canvas, border: `1px solid ${p.border}` }}>
+                  <div className="w-1/4 p-1.5 space-y-1" style={{ background: p.sidebar }}>
+                    <div className="h-1.5 rounded-full" style={{ background: p.accent, width: '70%' }}/>
+                    <div className="h-1 rounded-full opacity-60" style={{ background: p.sidebarText }}/>
+                    <div className="h-1 rounded-full opacity-40" style={{ background: p.sidebarText, width: '80%' }}/>
+                  </div>
+                  <div className="flex-1 p-1.5 space-y-1">
+                    <div className="h-2 rounded w-1/2" style={{ background: p.text, fontFamily: p.serif ? 'serif' : undefined, opacity: 0.85 }}/>
+                    <div className="rounded p-1 space-y-0.5" style={{ background: p.card, border: `1px solid ${p.border}` }}>
+                      <div className="h-1 rounded-full opacity-50" style={{ background: p.text }}/>
+                      <div className="h-1 rounded-full opacity-30 w-2/3" style={{ background: p.text }}/>
+                    </div>
+                    <div className="h-2 w-1/3 rounded" style={{ background: p.accent }}/>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 px-0.5">
+                  <span className={`text-xs font-bold ${active ? 'text-indigo-700 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'}`}>{t.label}</span>
+                  {active && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 ml-auto"/>}
+                </div>
               </button>
             );
           })}

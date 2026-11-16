@@ -8,6 +8,15 @@
     <meta name="theme-color" content="#6366f1" />
     <meta name="description" content="Управління задачами та проектами" />
     <title>OmniPlan</title>
+    <script>
+      // Apply the saved theme before first paint (mirrors applyTheme in useAppStore).
+      try {
+        var t = localStorage.getItem('omniplan-theme');
+        var r = document.documentElement;
+        if (t === 'dark' || t === 'claude-dark') r.classList.add('dark');
+        if (t === 'claude' || t === 'claude-dark') r.dataset.palette = 'claude';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

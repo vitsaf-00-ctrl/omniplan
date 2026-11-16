@@ -1,9 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Source Serif 4", ui-serif, Georgia, "Times New Roman", serif;
 }
 
 /* Dark mode support */
@@ -12,3 +13,77 @@
 /* Hide scrollbar but keep scroll functionality */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   "Claude" theme — warm cream / charcoal neutrals, clay accent, serif headings.
+   Enabled by <html data-palette="claude"> (+ .dark for the dark variant).
+   Tailwind v4 reads every color from these variables, so remapping the
+   indigo (accent) and slate (neutral) scales re-skins the whole app.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root[data-palette="claude"] {
+  /* Accent: clay / terracotta */
+  --color-indigo-50:  #fbf1ec;
+  --color-indigo-100: #f6e1d7;
+  --color-indigo-200: #eec3b0;
+  --color-indigo-300: #e5a286;
+  --color-indigo-400: #dd8a69;
+  --color-indigo-500: #d97757;
+  --color-indigo-600: #c6613f;
+  --color-indigo-700: #a84f31;
+  --color-indigo-800: #873f28;
+  --color-indigo-900: #6b3422;
+  --color-indigo-950: #3d1c12;
+
+  /* Neutrals: warm paper → warm charcoal (one scale serves light and dark) */
+  --color-slate-50:  #faf9f5;
+  --color-slate-100: #f0eee6;
+  --color-slate-200: #e5e2d8;
+  --color-slate-300: #d1cdc0;
+  --color-slate-400: #9c978a;
+  --color-slate-500: #7a766b;
+  --color-slate-600: #5e5b53;
+  --color-slate-700: #3d3d3a;
+  --color-slate-800: #30302e;
+  --color-slate-900: #262624;
+  --color-slate-950: #1f1e1d;
+
+  /* Calmer type: no 900-weight shouting */
+  --font-weight-black: 700;
+
+  background-color: var(--color-slate-50);
+  color-scheme: light;
+}
+:root[data-palette="claude"].dark {
+  background-color: var(--color-slate-900);
+  color-scheme: dark;
+}
+
+/* Serif headings, as in Claude */
+:root[data-palette="claude"] :is(h1, h2) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Light variant: light sidebar. Inside it the "dark-surface" tokens are
+   inverted so the existing bg-slate-900 / text-white classes read correctly. */
+:root[data-palette="claude"]:not(.dark) [data-sidebar] {
+  --color-slate-900: #f0eee6;   /* sidebar background */
+  --color-slate-800: #e5e2d8;   /* hover / active row */
+  --color-slate-700: #dcd8cc;
+  --color-slate-600: #c9c4b6;
+  --color-slate-500: #8a8579;
+  --color-slate-400: #6b675e;   /* muted labels */
+  --color-slate-300: #3d3d3a;
+  --color-white:     #141413;   /* primary text */
+  border-right: 1px solid #e5e2d8;
+}
+/* …but keep white text on accent-filled chips (logo, avatar, active badge) */
+:root[data-palette="claude"]:not(.dark) [data-sidebar] :is(.bg-indigo-500, .bg-indigo-600, .bg-indigo-700, .bg-rose-600) {
+  --color-white: #ffffff;
+}
+
+/* Dark variant: sidebar a touch deeper than the canvas */
+:root[data-palette="claude"].dark [data-sidebar] {
+  --color-slate-900: #1f1e1d;
+}
