@@ -119,7 +119,6 @@ export function IntegrationsTab() {
   };
 
   const tokenUrl = revealed ? `${baseUrl}?token=${revealed.token}` : `${baseUrl}?token=<ваш токен>`;
-  const tokenValue = revealed?.token ?? '<ваш токен>';
 
   return (
     <div className="space-y-5">
@@ -171,7 +170,7 @@ export function IntegrationsTab() {
             <CodeLine value={tokenUrl} secret/>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Окремо: адреса і токен (для ChatGPT)</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Окремо: адреса і токен (для заголовка Authorization)</p>
             <CodeLine value={baseUrl}/>
             <CodeLine value={revealed.token} secret/>
           </div>
@@ -225,21 +224,18 @@ export function IntegrationsTab() {
           </ol>
           <p className="text-slate-500">Альтернатива без токена в адресі: URL <code className="font-mono">{baseUrl}</code> і в «Request headers» заголовок <code className="font-mono">Authorization: Bearer {'<токен>'}</code>.</p>
         </Steps>
-        <Steps title="ChatGPT (Plus і вище, Developer mode)" open={openSteps === 'chatgpt'} onToggle={() => setOpenSteps(o => o === 'chatgpt' ? null : 'chatgpt')}>
+        <Steps title="ChatGPT (веб-версія chatgpt.com)" open={openSteps === 'chatgpt'} onToggle={() => setOpenSteps(o => o === 'chatgpt' ? null : 'chatgpt')}>
           <ol className="list-decimal pl-5 space-y-1">
             <li>Створіть токен вище з назвою «ChatGPT».</li>
-            <li>У ChatGPT: <b>Settings → Apps &amp; Connectors → Advanced settings</b> → увімкніть <b>Developer mode</b>.</li>
-            <li><b>Settings → Apps &amp; Connectors → Create</b>. Назва: <b>OmniPlan</b>. Connector URL:</li>
+            <li>Відкрийте <b>chatgpt.com/plugins</b> у браузері (не в застосунку) → <b>+</b> → <b>Add custom MCP server</b>.</li>
+            <li>Назва: <b>OmniPlan</b>. Server URL — адреса з токеном:</li>
           </ol>
-          <CodeLine value={baseUrl}/>
+          <CodeLine value={tokenUrl} secret={!!revealed}/>
           <ol className="list-decimal pl-5 space-y-1" start={4}>
-            <li>Authentication: <b>Token</b>, вставте токен:</li>
+            <li>Authentication: <b>No authentication</b> (токен уже в адресі).</li>
+            <li>Підтвердіть попередження → <b>Create</b> → встановіть плагін і увімкніть його в чаті.</li>
           </ol>
-          <CodeLine value={tokenValue} secret={!!revealed}/>
-          <ol className="list-decimal pl-5 space-y-1" start={5}>
-            <li><b>Create</b>. У чаті згадуйте OmniPlan у запиті; ChatGPT попросить підтвердження перед кожною зміною.</li>
-          </ol>
-          <p className="text-slate-500">Меню ChatGPT для конекторів ще в беті й може змінюватися.</p>
+          <p className="text-slate-500">Якщо пункту «Add custom MCP server» немає — увімкніть <b>Settings → Security and login → Developer mode</b>. Для власних серверів OpenAI вимагає відповідний тариф; меню часто змінюється.</p>
         </Steps>
       </div>
 
