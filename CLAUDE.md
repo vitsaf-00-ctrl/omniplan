@@ -10,13 +10,14 @@ npm run build        # Production build → dist/
 npm run preview      # Preview production build
 npm run lint         # TypeScript type-check (tsc --noEmit)
 npm run lint:eslint  # ESLint
-npm test             # Vitest (src/**/*.test.ts)
+npm test             # Vitest (src/**/*.test.ts, server/**/*.test.ts)
 ```
 
 Before committing run `npm run lint`, `npm run lint:eslint`, `npm test` and `npm run build`.
 A local pre-commit hook (`.git/hooks/pre-commit`, not versioned) runs tsc + ESLint.
 
-No environment variables are needed. Firebase web config is in `firebase-applet-config.json`.
+Firebase web config is in `firebase-applet-config.json`. The only env var is `FIREBASE_SERVICE_ACCOUNT`
+(Vercel, server only) for the MCP server; the web app needs none.
 Deploy: every push to `main` is auto-deployed by Vercel.
 
 ## Architecture
@@ -38,6 +39,15 @@ task in `useSyncStore` and show a toast with "Повторити".
 
 **Navigation:** `activeView` in `useAppStore` (no router). `Dashboard.tsx` lazy-loads screens, each wrapped in
 `ErrorBoundary` (reset on view change); the app root is wrapped too (`main.tsx`).
+
+**MCP server for AI assistants (Claude, ChatGPT):** `api/mcp.ts` (Vercel function, Web `Request`/`Response`)
+→ `server/mcp/handler.ts` (auth + stateless Streamable HTTP transport) → `server/mcp/server.ts` (tool definitions)
+→ `server/mcp/ops.ts` (task logic over a `TaskRepo`; Firestore Admin in `firestoreRepo.ts`, in-memory in tests).
+Auth: personal tokens `omni.<uid>.<secret>` created in Settings → Інтеграції; only SHA-256(secret) is stored in
+`users/{uid}.mcpTokens[hash]` (`src/lib/mcpToken.ts`, shared by app and server). Token comes from `Authorization:
+Bearer`, `X-OmniPlan-Token` or `?token=`. The server runs in `Europe/Kyiv` (`server/mcp/tz.ts`, imported first) so
+dates match the app. `ops.ts` mirrors the app's recurrence rules — change both together. Server imports of
+local files must use `.js` extensions (Vercel runs them as ESM, file by file).
 
 ## Key Files
 
@@ -69,7 +79,7 @@ whole series and deletes future not-done copies. Do not reintroduce bulk pre-gen
 `useTaskStore(s => s.projects)` (live, from Firestore).
 
 **Firestore serialization:** add every new `Task` field to both `taskToDoc()` and `docToTask()` — a field missing
-from either is silently lost.
+from either is silently lost. The MCP server has its own copy (`server/mcp/serialize.ts`) — update it too.
 
 **Clipboard:** `useAppStore` tracks `clipboardTaskId` + `clipboardMode` (copy/cut).
 

@@ -29,6 +29,8 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+          // API routes must reach the network, never the SPA fallback.
+          navigateFallbackDenylist: [/^\/api\//],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -57,7 +59,7 @@ export default defineConfig(() => {
     test: {
       globals: true,
       environment: 'node',
-      include: ['src/**/*.test.ts'],
+      include: ['src/**/*.test.ts', 'server/**/*.test.ts'],
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

@@ -23,3 +23,11 @@ npm run build        # production build
 ```
 
 Деплой: кожен push у `main` автоматично деплоїться на Vercel.
+
+## ШІ-асистенти (Claude, ChatGPT)
+
+`/api/mcp` — MCP-сервер: асистент може переглядати, створювати, змінювати й закривати задачі.
+Токен і інструкції — у застосунку: **Налаштування → Інтеграції**.
+
+Одноразово на Vercel додайте змінну `FIREBASE_SERVICE_ACCOUNT` (вміст JSON-ключа сервісного акаунта
+Firebase: Project settings → Service accounts → Generate new private key) і зробіть Redeploy.
